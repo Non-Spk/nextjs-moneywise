@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  transactions Transaction[]
+  creditCards  CreditCard[]
+  bills        Bill[]
+  deductions   TaxDeduction[]
+}
+
+model Transaction {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String   // "income" | "expense"
+  category   String   // e.g. "salary", "food", "utilities", "rent", "phone"
+  channel    String   // "cash" | "transfer" | "credit"
+  amount     Float
+  note       String   @default("")
+  date       DateTime
+  creditCardId String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditCard CreditCard? @relation(fields: [creditCardId], references: [id])
+}
+
+model CreditCard {
+  id           String        @id @default(cuid())
+  userId       String
+  bankName     String
+  cardNumber   String        // last 4 digits only
+  creditLimit  Float
+  balance      Float         @default(0)
+  dueDate      Int           // day of month (1-31)
+  createdAt    DateTime      @default(now())
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+}
+
+model Bill {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  amount    Float
+  dueDay    Int
+  isPaid    Boolean  @default(false)
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TaxDeduction {
+  id        String   @id @default(cuid())
+  userId    String
+  category  String
+  name      String
+  amount    Float
+  maxLimit  Float
+  taxYear   Int      @default(2568)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
