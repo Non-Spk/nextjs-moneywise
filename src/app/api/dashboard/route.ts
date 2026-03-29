@@ -35,13 +35,16 @@ export async function GET(req: Request) {
     orderBy: { date: "desc" },
   });
 
+  // Categories that are internal transfers, not real expenses
+  const EXCLUDED_FROM_EXPENSE = ["credit_card_payment"];
+
   // Calculate totals
   const totalIncome = transactions
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalExpense = transactions
-    .filter((t) => t.type === "expense")
+    .filter((t) => t.type === "expense" && !EXCLUDED_FROM_EXPENSE.includes(t.category))
     .reduce((sum, t) => sum + t.amount, 0);
 
   // Group expenses by category
@@ -49,6 +52,7 @@ export async function GET(req: Request) {
   const incomeByCategory: Record<string, number> = {};
 
   for (const t of transactions) {
+    if (t.type === "expense" && EXCLUDED_FROM_EXPENSE.includes(t.category)) continue;
     const target = t.type === "expense" ? expenseByCategory : incomeByCategory;
     target[t.category] = (target[t.category] || 0) + t.amount;
   }
