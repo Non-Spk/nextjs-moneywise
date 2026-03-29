@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/constants";
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, CURRENCIES } from "@/lib/constants";
 
 interface Category {
   id: string;
@@ -11,13 +11,23 @@ interface Category {
   label: string;
 }
 
+interface ExchangeRate {
+  id: string;
+  currency: string;
+  rate: number;
+  updatedAt: string;
+}
+
 export default function SettingsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [formType, setFormType] = useState("expense");
   const [formValue, setFormValue] = useState("");
   const [formLabel, setFormLabel] = useState("");
   const [error, setError] = useState("");
+  const [rateCurrency, setRateCurrency] = useState("USD");
+  const [rateValue, setRateValue] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState("");
 
@@ -26,7 +36,12 @@ export default function SettingsPage() {
     if (res.ok) setCategories(await res.json());
   }, []);
 
-  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  const fetchRates = useCallback(async () => {
+    const res = await fetch("/api/exchange-rates");
+    if (res.ok) setExchangeRates(await res.json());
+  }, []);
+
+  useEffect(() => { fetchCategories(); fetchRates(); }, [fetchCategories, fetchRates]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,6 +81,17 @@ export default function SettingsPage() {
       body: JSON.stringify({ label: editLabel.trim() }),
     });
     if (res.ok) { setEditId(null); fetchCategories(); }
+  }
+
+  async function handleUpdateRate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!rateValue || parseFloat(rateValue) <= 0) return;
+    const res = await fetch("/api/exchange-rates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currency: rateCurrency, rate: rateValue }),
+    });
+    if (res.ok) { setRateValue(""); fetchRates(); }
   }
 
   const customExpense = categories.filter((c) => c.type === "expense");
@@ -147,9 +173,40 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           {renderCategorySection("หมวดหมู่รายจ่าย", EXPENSE_CATEGORIES, customExpense)}
           {renderCategorySection("หมวดหมู่รายรับ", INCOME_CATEGORIES, customIncome)}
+        </div>
+
+        {/* Exchange rates */}
+        <div className="bg-[var(--card-bg)] rounded-xl p-5 shadow-[var(--shadow-card)] border border-[var(--card-border)]">
+          <h3 className="font-semibold text-[14px] text-[var(--text-primary)] mb-4">อัตราแลกเปลี่ยน (เทียบ THB)</h3>
+          <form onSubmit={handleUpdateRate} className="flex gap-2 mb-4">
+            <select value={rateCurrency} onChange={(e) => setRateCurrency(e.target.value)}
+              className="px-3 py-2 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-[13px] outline-none focus:border-[var(--brand-red)] transition-colors">
+              {CURRENCIES.filter((c) => c.value !== "THB").map((c) => <option key={c.value} value={c.value}>{c.value}</option>)}
+            </select>
+            <input type="number" value={rateValue} onChange={(e) => setRateValue(e.target.value)}
+              placeholder={`1 ${rateCurrency} = ? THB`} min="0" step="any" required
+              className="flex-1 px-3 py-2 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-[13px] outline-none focus:border-[var(--brand-red)] transition-colors" />
+            <button type="submit"
+              className="px-4 py-2 bg-[var(--brand-red)] text-white rounded-lg text-[13px] font-medium hover:bg-[var(--brand-red-hover)] transition-colors">อัพเดท</button>
+          </form>
+          {exchangeRates.length > 0 ? (
+            <div className="space-y-2">
+              {exchangeRates.map((r) => (
+                <div key={r.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--bg-subtle)] border border-[var(--card-border)]">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[13px] font-semibold text-[var(--text-primary)] w-10">{r.currency}</span>
+                    <span className="text-[13px] text-[var(--text-primary)]">1 {r.currency} = <span className="font-semibold">{r.rate}</span> THB</span>
+                  </div>
+                  <span className="text-[11px] text-[var(--text-tertiary)]">อัพเดท {new Date(r.updatedAt).toLocaleDateString("th-TH")}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[12px] text-[var(--text-tertiary)]">ยังไม่มีอัตราแลกเปลี่ยน - เพิ่มได้ด้านบน</p>
+          )}
         </div>
       </div>
 

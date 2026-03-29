@@ -2,41 +2,32 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUserId } from "@/lib/api-helpers";
 
-// POST /api/investments/[id] - buy more, sell, or update value
+async function getRate(userId: string, currency: string): Promise<number> {
+  if (currency === "THB") return 1;
+  const rate = await prisma.exchangeRate.findFirst({ where: { userId, currency } });
+  return rate?.rate || 1;
+}
+
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const result = await getAuthUserId();
   if ("error" in result) return result.error;
 
   const { id } = await params;
   const body = await req.json();
-  const { type, amount, units, pricePerUnit, note, date, exchangeRate } = body;
+  const { type, amount, units, pricePerUnit, note, date } = body;
 
-  const inv = await prisma.investment.findFirst({
-    where: { id, userId: result.userId },
-  });
+  const inv = await prisma.investment.findFirst({ where: { id, userId: result.userId } });
   if (!inv) return NextResponse.json({ error: "ไม่พบรายการ" }, { status: 404 });
 
   const txAmount = parseFloat(amount) || 0;
   const txUnits = parseFloat(units) || 0;
   const txDate = new Date(date || new Date());
-  const rate = inv.exchangeRate;
-
-  // Update exchange rate if provided
-  if (exchangeRate && parseFloat(exchangeRate) > 0) {
-    await prisma.investment.update({
-      where: { id },
-      data: { exchangeRate: parseFloat(exchangeRate) },
-    });
-  }
+  const rate = await getRate(result.userId, inv.currency);
 
   if (type === "buy") {
     await prisma.investment.update({
       where: { id },
-      data: {
-        costBasis: { increment: txAmount },
-        currentValue: { increment: txAmount },
-        units: { increment: txUnits },
-      },
+      data: { costBasis: { increment: txAmount }, currentValue: { increment: txAmount }, units: { increment: txUnits } },
     });
     await prisma.transaction.create({
       data: {
@@ -50,14 +41,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const sellUnits = Math.min(txUnits, inv.units);
     const costPerUnit = inv.units > 0 ? inv.costBasis / inv.units : 0;
     const costReduction = costPerUnit * sellUnits;
-
     await prisma.investment.update({
       where: { id },
-      data: {
-        costBasis: { decrement: costReduction },
-        currentValue: { decrement: Math.min(txAmount, inv.currentValue) },
-        units: { decrement: sellUnits },
-      },
+      data: { costBasis: { decrement: costReduction }, currentValue: { decrement: Math.min(txAmount, inv.currentValue) }, units: { decrement: sellUnits } },
     });
     await prisma.transaction.create({
       data: {
@@ -68,17 +54,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       },
     });
   } else if (type === "value_update") {
-    await prisma.investment.update({
-      where: { id },
-      data: { currentValue: txAmount },
-    });
-  } else if (type === "rate_update") {
-    // Only update exchange rate (already done above)
+    await prisma.investment.update({ where: { id }, data: { currentValue: txAmount } });
   }
 
   await prisma.investmentTransaction.create({
     data: {
-      investmentId: id, type, amount: txAmount, units: txUnits,
+      investmentId: id, type, amount: txAmount, units: txUnits, exchangeRate: rate,
       pricePerUnit: parseFloat(pricePerUnit) || 0, note: note || "", date: txDate,
     },
   });

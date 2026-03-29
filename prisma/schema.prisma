@@ -22,6 +22,7 @@ model User {
   savingsAccounts SavingsAccount[]
   investments  Investment[]
   physicalAssets PhysicalAsset[]
+  exchangeRates ExchangeRate[]
 }
 
 model Transaction {
@@ -132,8 +133,7 @@ model Investment {
   userId        String
   name          String
   type          String                // "gold" | "stock" | "fund" | "crypto" | "bond" | "other"
-  currency      String                @default("THB") // "THB" | "USD" | "EUR" | "JPY" | "CNY"
-  exchangeRate  Float                 @default(1) // rate to THB (e.g. 1 USD = 34.5 THB)
+  currency      String                @default("THB")
   costBasis     Float                 @default(0) // ต้นทุนรวม (ในสกุลเงินต้นทาง)
   currentValue  Float                 @default(0) // มูลค่าปัจจุบัน (ในสกุลเงินต้นทาง)
   units         Float                 @default(0)
@@ -148,9 +148,10 @@ model InvestmentTransaction {
   id            String     @id @default(cuid())
   investmentId  String
   type          String     // "buy" | "sell" | "value_update"
-  amount        Float      // จำนวนเงิน
-  units         Float      @default(0) // จำนวนหน่วย
+  amount        Float
+  units         Float      @default(0)
   pricePerUnit  Float      @default(0)
+  exchangeRate  Float      @default(1) // rate at time of transaction
   note          String     @default("")
   date          DateTime
   createdAt     DateTime   @default(now())
@@ -169,4 +170,15 @@ model PhysicalAsset {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  userId    String
+  currency  String   // "USD" | "EUR" | "JPY" etc.
+  rate      Float    // 1 unit of currency = X THB
+  updatedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, currency])
 }

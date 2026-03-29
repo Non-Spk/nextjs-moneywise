@@ -5,9 +5,9 @@ import Topbar from "@/components/Topbar";
 import { formatCurrency, INVESTMENT_TYPES, CURRENCIES, getInvestmentTypeLabel } from "@/lib/constants";
 
 interface InvestmentTx { id: string; type: string; amount: number; units: number; pricePerUnit: number; note: string; date: string; }
-interface Investment { id: string; name: string; type: string; currency: string; exchangeRate: number; costBasis: number; currentValue: number; units: number; note: string; transactions: InvestmentTx[]; }
+interface Investment { id: string; name: string; type: string; currency: string; currentRate: number; costBasis: number; currentValue: number; units: number; note: string; transactions: InvestmentTx[]; }
 
-type TxMode = "buy" | "sell" | "value_update" | "rate_update";
+type TxMode = "buy" | "sell" | "value_update";
 
 export default function InvestmentsPage() {
   const [investments, setInvestments] = useState<Investment[]>([]);
@@ -24,14 +24,12 @@ export default function InvestmentsPage() {
   const [formNote, setFormNote] = useState("");
   const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
   const [formCurrency, setFormCurrency] = useState("THB");
-  const [formRate, setFormRate] = useState("1");
 
   const [txAmount, setTxAmount] = useState("");
   const [txUnits, setTxUnits] = useState("");
   const [txPrice, setTxPrice] = useState("");
   const [txNote, setTxNote] = useState("");
   const [txDate, setTxDate] = useState(new Date().toISOString().split("T")[0]);
-  const [txRate, setTxRate] = useState("");
 
   const fetchInvestments = useCallback(async () => {
     const res = await fetch("/api/investments");
@@ -45,9 +43,9 @@ export default function InvestmentsPage() {
     const res = await fetch("/api/investments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: formName, type: formType, amount: formAmount, units: formUnits, pricePerUnit: formPrice, note: formNote, date: formDate, currency: formCurrency, exchangeRate: formRate }),
+      body: JSON.stringify({ name: formName, type: formType, amount: formAmount, units: formUnits, pricePerUnit: formPrice, note: formNote, date: formDate, currency: formCurrency }),
     });
-    if (res.ok) { setShowAddModal(false); setFormName(""); setFormAmount(""); setFormUnits(""); setFormPrice(""); setFormNote(""); setFormCurrency("THB"); setFormRate("1"); fetchInvestments(); }
+    if (res.ok) { setShowAddModal(false); setFormName(""); setFormAmount(""); setFormUnits(""); setFormPrice(""); setFormNote(""); setFormCurrency("THB"); fetchInvestments(); }
   }
 
   function openTxModal(inv: Investment, mode: TxMode) {
@@ -56,7 +54,6 @@ export default function InvestmentsPage() {
     setTxAmount(mode === "value_update" ? String(inv.currentValue) : "");
     setTxUnits(""); setTxPrice(""); setTxNote("");
     setTxDate(new Date().toISOString().split("T")[0]);
-    setTxRate(String(inv.exchangeRate));
     setShowTxModal(true);
   }
 
@@ -66,7 +63,7 @@ export default function InvestmentsPage() {
     const res = await fetch(`/api/investments/${txInv.id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: txMode, amount: txAmount, units: txUnits, pricePerUnit: txPrice, note: txNote, date: txDate, exchangeRate: txRate }),
+      body: JSON.stringify({ type: txMode, amount: txAmount, units: txUnits, pricePerUnit: txPrice, note: txNote, date: txDate }),
     });
     if (res.ok) { setShowTxModal(false); setTxInv(null); fetchInvestments(); }
   }
@@ -77,8 +74,8 @@ export default function InvestmentsPage() {
     if (res.ok) fetchInvestments();
   }
 
-  const totalCost = investments.reduce((s, i) => s + i.costBasis * i.exchangeRate, 0);
-  const totalValue = investments.reduce((s, i) => s + i.currentValue * i.exchangeRate, 0);
+  const totalCost = investments.reduce((s, i) => s + i.costBasis * i.currentRate, 0);
+  const totalValue = investments.reduce((s, i) => s + i.currentValue * i.currentRate, 0);
   const totalPL = totalValue - totalCost;
   const inputClass = "w-full px-3.5 py-2.5 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-[13px] outline-none focus:border-[var(--brand-red)] transition-colors";
 
@@ -119,8 +116,8 @@ export default function InvestmentsPage() {
             const pl = inv.currentValue - inv.costBasis;
             const plPercent = inv.costBasis > 0 ? (pl / inv.costBasis) * 100 : 0;
             const isForeign = inv.currency !== "THB";
-            const thbValue = inv.currentValue * inv.exchangeRate;
-            const thbCost = inv.costBasis * inv.exchangeRate;
+            const thbValue = inv.currentValue * inv.currentRate;
+            const thbCost = inv.costBasis * inv.currentRate;
             const thbPL = thbValue - thbCost;
             return (
               <div key={inv.id} className="bg-[var(--card-bg)] rounded-xl p-5 shadow-[var(--shadow-card)] border border-[var(--card-border)]">
@@ -129,7 +126,7 @@ export default function InvestmentsPage() {
                     <p className="text-[14px] font-semibold text-[var(--text-primary)]">{inv.name}</p>
                     <div className="flex gap-1.5 mt-1">
                       <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--badge-muted-bg)] text-[var(--badge-muted-text)]">{getInvestmentTypeLabel(inv.type)}</span>
-                      {isForeign && <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--info-bg)] text-[var(--info-text)]">{inv.currency} @ {inv.exchangeRate}</span>}
+                      {isForeign && <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--info-bg)] text-[var(--info-text)]">{inv.currency} @ {inv.currentRate}</span>}
                     </div>
                   </div>
                   <button onClick={() => handleDelete(inv.id)} className="text-[var(--text-tertiary)] hover:text-[var(--danger)] transition-colors">
@@ -160,7 +157,6 @@ export default function InvestmentsPage() {
                   <button onClick={() => openTxModal(inv, "buy")} className="flex-1 py-2 bg-[var(--success-bg)] text-[var(--success-text)] rounded-lg text-[12px] font-medium">ซื้อเพิ่ม</button>
                   <button onClick={() => openTxModal(inv, "sell")} className="flex-1 py-2 bg-[var(--danger-bg)] text-[var(--danger-text)] rounded-lg text-[12px] font-medium">ขาย</button>
                   <button onClick={() => openTxModal(inv, "value_update")} className="flex-1 py-2 bg-[var(--info-bg)] text-[var(--info-text)] rounded-lg text-[12px] font-medium">อัพเดท</button>
-                  {isForeign && <button onClick={() => openTxModal(inv, "rate_update")} className="flex-1 py-2 bg-[var(--badge-muted-bg)] text-[var(--badge-muted-text)] rounded-lg text-[12px] font-medium">เรท</button>}
                 </div>
               </div>
             );
@@ -187,16 +183,13 @@ export default function InvestmentsPage() {
               </div>
               <div className="mb-4">
                 <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">สกุลเงิน</label>
-                <select value={formCurrency} onChange={(e) => { setFormCurrency(e.target.value); setFormRate(e.target.value === "THB" ? "1" : ""); }} className={inputClass}>
+                <select value={formCurrency} onChange={(e) => setFormCurrency(e.target.value)} className={inputClass}>
                   {CURRENCIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
+                {formCurrency !== "THB" && (
+                  <p className="text-[11px] text-[var(--text-tertiary)] mt-1">อัตราแลกเปลี่ยนจัดการได้ที่หน้าตั้งค่า</p>
+                )}
               </div>
-              {formCurrency !== "THB" && (
-                <div className="mb-4">
-                  <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">อัตราแลกเปลี่ยน (1 {formCurrency} = ? THB)</label>
-                  <input type="number" value={formRate} onChange={(e) => setFormRate(e.target.value)} required min="0" step="any" placeholder="เช่น 34.5" className={inputClass} />
-                </div>
-              )}
               <div className="mb-4">
                 <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">จำนวนเงินลงทุน ({formCurrency})</label>
                 <input type="number" value={formAmount} onChange={(e) => setFormAmount(e.target.value)} required min="0" step="0.01" className={inputClass} />
@@ -233,26 +226,13 @@ export default function InvestmentsPage() {
         <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowTxModal(false)}>
           <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-[17px] font-semibold mb-1 text-[var(--text-primary)]">
-              {txMode === "buy" ? "ซื้อเพิ่ม" : txMode === "sell" ? "ขาย" : txMode === "value_update" ? "อัพเดทมูลค่า" : "อัพเดทเรทค่าเงิน"}
+              {txMode === "buy" ? "ซื้อเพิ่ม" : txMode === "sell" ? "ขาย" : "อัพเดทมูลค่า"}
             </h2>
             <p className="text-[13px] text-[var(--text-secondary)] mb-5">
               {txInv.name} - มูลค่า {formatCurrency(txInv.currentValue)} {txInv.currency}
-              {txInv.currency !== "THB" && ` (${formatCurrency(txInv.currentValue * txInv.exchangeRate)} THB @ ${txInv.exchangeRate})`}
+              {txInv.currency !== "THB" && ` (${formatCurrency(txInv.currentValue * txInv.currentRate)} THB @ ${txInv.currentRate})`}
             </p>
             <form onSubmit={handleTx}>
-              {txMode === "rate_update" ? (
-                <div className="mb-5">
-                  <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">อัตราแลกเปลี่ยนใหม่ (1 {txInv.currency} = ? THB)</label>
-                  <input type="number" value={txRate} onChange={(e) => setTxRate(e.target.value)} required min="0" step="any" className={inputClass} />
-                  {parseFloat(txRate) > 0 && (
-                    <div className="bg-[var(--bg-subtle)] rounded-lg p-3 mt-3 text-[12px]">
-                      <p className="text-[var(--text-primary)]">มูลค่าใหม่ (THB): {formatCurrency(txInv.currentValue * parseFloat(txRate))}</p>
-                      <p className="text-[var(--text-tertiary)]">เดิม: {formatCurrency(txInv.currentValue * txInv.exchangeRate)} (@ {txInv.exchangeRate})</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <>
               <div className="mb-4">
                 <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">
                   {txMode === "value_update" ? `มูลค่าปัจจุบัน (${txInv.currency})` : `จำนวนเงิน (${txInv.currency})`}
@@ -279,13 +259,11 @@ export default function InvestmentsPage() {
                 <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">หมายเหตุ</label>
                 <input type="text" value={txNote} onChange={(e) => setTxNote(e.target.value)} className={inputClass} />
               </div>
-              </>
-              )}
               <div className="flex gap-2.5 justify-end">
                 <button type="button" onClick={() => setShowTxModal(false)} className="px-4 py-2 border border-[var(--input-border)] text-[var(--text-primary)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">ยกเลิก</button>
                 <button type="submit" className={`px-4 py-2 text-white rounded-lg text-[13px] font-medium transition-colors ${
                   txMode === "buy" ? "bg-[var(--success)]" : txMode === "sell" ? "bg-[var(--danger)]" : "bg-[var(--info)]"
-                }`}>{txMode === "buy" ? "ซื้อ" : txMode === "sell" ? "ขาย" : txMode === "rate_update" ? "อัพเดทเรท" : "อัพเดท"}</button>
+                }`}>{txMode === "buy" ? "ซื้อ" : txMode === "sell" ? "ขาย" : "อัพเดท"}</button>
               </div>
             </form>
           </div>

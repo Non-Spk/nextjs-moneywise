@@ -102,8 +102,12 @@ export async function GET(req: Request) {
   const investments = await prisma.investment.findMany({
     where: { userId: result.userId },
   });
-  const totalInvestment = investments.reduce((sum, i) => sum + i.currentValue * i.exchangeRate, 0);
-  const totalInvestmentCost = investments.reduce((sum, i) => sum + i.costBasis * i.exchangeRate, 0);
+  const exchangeRates = await prisma.exchangeRate.findMany({ where: { userId: result.userId } });
+  const rateMap: Record<string, number> = { THB: 1 };
+  for (const r of exchangeRates) rateMap[r.currency] = r.rate;
+
+  const totalInvestment = investments.reduce((sum, i) => sum + i.currentValue * (rateMap[i.currency] || 1), 0);
+  const totalInvestmentCost = investments.reduce((sum, i) => sum + i.costBasis * (rateMap[i.currency] || 1), 0);
 
   // Get physical assets summary
   const physicalAssets = await prisma.physicalAsset.findMany({
