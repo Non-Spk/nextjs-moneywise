@@ -5,7 +5,7 @@ import Topbar from "@/components/Topbar";
 import { formatCurrency, getInvestmentTypeLabel, getPhysicalAssetTypeLabel, PHYSICAL_ASSET_TYPES } from "@/lib/constants";
 
 interface SavingsAccount { id: string; name: string; bankName: string; balance: number; goal: number | null; }
-interface Investment { id: string; name: string; type: string; costBasis: number; currentValue: number; units: number; }
+interface Investment { id: string; name: string; type: string; currency: string; currentRate: number; costBasis: number; currentValue: number; units: number; }
 interface PhysicalAsset { id: string; name: string; type: string; purchaseValue: number; currentValue: number; note: string; }
 
 export default function AssetsPage() {
@@ -45,18 +45,19 @@ export default function AssetsPage() {
   }
 
   const totalSavings = savings.reduce((s, a) => s + a.balance, 0);
-  const totalInvestmentValue = investments.reduce((s, i) => s + i.currentValue, 0);
-  const totalInvestmentCost = investments.reduce((s, i) => s + i.costBasis, 0);
+  const totalInvestmentValue = investments.reduce((s, i) => s + i.currentValue * (i.currentRate || 1), 0);
+  const totalInvestmentCost = investments.reduce((s, i) => s + i.costBasis * (i.currentRate || 1), 0);
   const totalPhysical = physicalAssets.reduce((s, a) => s + a.currentValue, 0);
   const totalAssets = totalSavings + totalInvestmentValue + totalPhysical;
   const investmentPL = totalInvestmentValue - totalInvestmentCost;
 
-  // Group investments by type
+  // Group investments by type (in THB)
   const byType: Record<string, { value: number; cost: number; count: number }> = {};
   for (const inv of investments) {
     if (!byType[inv.type]) byType[inv.type] = { value: 0, cost: 0, count: 0 };
-    byType[inv.type].value += inv.currentValue;
-    byType[inv.type].cost += inv.costBasis;
+    const rate = inv.currentRate || 1;
+    byType[inv.type].value += inv.currentValue * rate;
+    byType[inv.type].cost += inv.costBasis * rate;
     byType[inv.type].count++;
   }
 
