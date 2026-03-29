@@ -52,131 +52,138 @@ export default function CreditCardsPage() {
   }
 
   function getUsageColor(percent: number) {
-    if (percent < 30) return "bg-[var(--success)]";
-    if (percent < 70) return "bg-[var(--warning)]";
-    return "bg-[var(--danger)]";
+    if (percent < 30) return "var(--success)";
+    if (percent < 70) return "var(--warning)";
+    return "var(--danger)";
   }
 
   const totalDebt = cards.reduce((sum, c) => sum + c.balance, 0);
   const totalLimit = cards.reduce((sum, c) => sum + c.creditLimit, 0);
-  const inputClass = "w-full px-3 py-2.5 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-md text-sm outline-none focus:border-[var(--brand-red)] transition-colors";
+  const inputClass = "w-full px-3.5 py-2.5 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-[13px] outline-none focus:border-[var(--brand-red)] transition-colors";
 
   return (
     <>
       <Topbar title="บัตรเครดิต & หนี้สิน" />
-      <div className="p-6">
+      <div className="p-6 max-w-[1200px]">
         <div className="flex justify-between items-center mb-5">
-          <h2 className="font-bold text-base text-[var(--text-primary)]">บัตรเครดิต & หนี้สิน</h2>
+          <h2 className="font-semibold text-[15px] text-[var(--text-primary)]">บัตรเครดิต & หนี้สิน</h2>
           <div className="flex gap-2">
             <button onClick={() => exportToExcel("credit-cards")}
-              className="px-4 py-2 bg-[var(--medium-gray)] text-[var(--light-bg)] rounded-md text-sm font-semibold hover:opacity-90 transition-opacity">Export Excel</button>
+              className="px-4 py-2 bg-[var(--bg-subtle)] text-[var(--text-secondary)] border border-[var(--card-border)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">Export Excel</button>
             <button onClick={() => setShowModal(true)}
-              className="px-4 py-2 bg-[var(--brand-red)] text-white rounded-md text-sm font-semibold hover:opacity-90 transition-opacity">+ เพิ่มบัตรเครดิต</button>
+              className="px-4 py-2 bg-[var(--brand-red)] text-white rounded-lg text-[13px] font-medium hover:bg-[var(--brand-red-hover)] transition-colors">+ เพิ่มบัตรเครดิต</button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {cards.map((card) => {
             const usage = getUsagePercent(card);
+            const usageColor = getUsageColor(usage);
             return (
-              <div key={card.id} className="bg-gradient-to-br from-[var(--dark-charcoal)] to-[var(--medium-gray)] text-white rounded-xl p-6 relative overflow-hidden">
-                <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-white/5" />
-                <div className="flex justify-between items-start">
-                  <p className="text-xs font-semibold opacity-70 uppercase tracking-wider">{card.bankName}</p>
-                  <button onClick={() => handleDelete(card.id)} className="text-white/30 hover:text-[var(--danger)] text-sm transition-colors">x</button>
+              <div key={card.id} className="bg-[var(--charcoal)] rounded-2xl p-6 relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full" style={{ backgroundColor: usageColor, opacity: 0.06 }} />
+                <div className="flex justify-between items-start relative">
+                  <p className="text-[11px] font-semibold text-[var(--sidebar-text-muted)] uppercase tracking-wider">{card.bankName}</p>
+                  <button onClick={() => handleDelete(card.id)} className="text-[var(--sidebar-text-muted)] hover:text-[var(--danger)] transition-colors">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+                  </button>
                 </div>
-                <p className="text-base font-semibold mt-4 tracking-widest">**** **** **** {card.cardNumber}</p>
-                <div className="flex justify-between mt-4">
+                <p className="text-[15px] font-semibold mt-5 tracking-[0.2em] text-white">**** **** **** {card.cardNumber}</p>
+                <div className="flex justify-between mt-5">
                   <div>
-                    <p className="text-[10px] opacity-60 uppercase">ยอดค้างชำระ</p>
-                    <p className="text-lg font-bold">{formatCurrency(card.balance)}</p>
+                    <p className="text-[10px] text-[var(--sidebar-text-muted)] uppercase tracking-wide">ยอดค้างชำระ</p>
+                    <p className="text-[18px] font-bold text-white mt-0.5">{formatCurrency(card.balance)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] opacity-60 uppercase">วงเงิน</p>
-                    <p className="text-sm font-semibold">{formatCurrency(card.creditLimit)}</p>
+                    <p className="text-[10px] text-[var(--sidebar-text-muted)] uppercase tracking-wide">วงเงิน</p>
+                    <p className="text-[14px] font-semibold text-[var(--sidebar-text)] mt-0.5">{formatCurrency(card.creditLimit)}</p>
                   </div>
                 </div>
-                <div className="mt-4 bg-white/15 h-1.5 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all ${getUsageColor(usage)}`} style={{ width: `${usage}%` }} />
+                <div className="mt-4 bg-[var(--sidebar-divider)] h-1.5 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${usage}%`, backgroundColor: usageColor }} />
                 </div>
                 <div className="flex justify-between mt-2">
-                  <p className="text-[10px] opacity-60">ใช้ไป {usage.toFixed(0)}%</p>
-                  <p className="text-[10px] opacity-60">ครบกำหนดวันที่ {card.dueDate}</p>
+                  <p className="text-[11px] text-[var(--sidebar-text-muted)]">ใช้ไป {usage.toFixed(0)}%</p>
+                  <p className="text-[11px] text-[var(--sidebar-text-muted)]">ครบกำหนดวันที่ {card.dueDate}</p>
                 </div>
               </div>
             );
           })}
           {cards.length === 0 && (
-            <div className="col-span-full text-center py-12 text-[var(--text-secondary)]">ยังไม่มีบัตรเครดิต</div>
+            <div className="col-span-full text-center py-12 text-[var(--text-tertiary)]">ยังไม่มีบัตรเครดิต</div>
           )}
         </div>
 
-        <div className="bg-[var(--card-bg)] rounded-lg p-5 shadow-[0_2px_5px_var(--shadow-color)] transition-colors">
-          <h3 className="font-bold text-sm mb-4 text-[var(--text-primary)]">สรุปหนี้สินทั้งหมด</h3>
-          <table className="w-full">
-            <thead>
-              <tr className="bg-[var(--table-header-bg)]">
-                <th className="px-3 py-2 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase">บัตร</th>
-                <th className="px-3 py-2 text-right text-xs font-semibold text-[var(--text-secondary)] uppercase">วงเงิน</th>
-                <th className="px-3 py-2 text-right text-xs font-semibold text-[var(--text-secondary)] uppercase">ยอดค้างชำระ</th>
-                <th className="px-3 py-2 text-right text-xs font-semibold text-[var(--text-secondary)] uppercase">คงเหลือ</th>
-                <th className="px-3 py-2 text-center text-xs font-semibold text-[var(--text-secondary)] uppercase">ครบกำหนด</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm">
-              {cards.map((card) => (
-                <tr key={card.id} className="border-b border-[var(--table-row-border)]">
-                  <td className="px-3 py-2.5 text-[var(--text-primary)]">{card.bankName} *{card.cardNumber}</td>
-                  <td className="px-3 py-2.5 text-right text-[var(--text-primary)]">{formatCurrency(card.creditLimit)}</td>
-                  <td className="px-3 py-2.5 text-right font-semibold text-[var(--danger)]">{formatCurrency(card.balance)}</td>
-                  <td className="px-3 py-2.5 text-right text-[var(--success)]">{formatCurrency(card.creditLimit - card.balance)}</td>
-                  <td className="px-3 py-2.5 text-center text-[var(--text-primary)]">วันที่ {card.dueDate}</td>
+        <div className="bg-[var(--card-bg)] rounded-xl shadow-[var(--shadow-card)] border border-[var(--card-border)] overflow-hidden transition-colors">
+          <div className="px-5 py-4">
+            <h3 className="font-semibold text-[14px] text-[var(--text-primary)]">สรุปหนี้สินทั้งหมด</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[var(--table-header-bg)] border-y border-[var(--card-border)]">
+                  <th className="px-5 py-2.5 text-left text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">บัตร</th>
+                  <th className="px-5 py-2.5 text-right text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">วงเงิน</th>
+                  <th className="px-5 py-2.5 text-right text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">ยอดค้างชำระ</th>
+                  <th className="px-5 py-2.5 text-right text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">คงเหลือ</th>
+                  <th className="px-5 py-2.5 text-center text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">ครบกำหนด</th>
                 </tr>
-              ))}
-              {cards.length > 0 && (
-                <tr className="bg-[var(--table-header-bg)] font-bold">
-                  <td className="px-3 py-2.5 text-[var(--text-primary)]">รวม</td>
-                  <td className="px-3 py-2.5 text-right text-[var(--text-primary)]">{formatCurrency(totalLimit)}</td>
-                  <td className="px-3 py-2.5 text-right text-[var(--danger)]">{formatCurrency(totalDebt)}</td>
-                  <td className="px-3 py-2.5 text-right text-[var(--success)]">{formatCurrency(totalLimit - totalDebt)}</td>
-                  <td></td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="text-[13px]">
+                {cards.map((card) => (
+                  <tr key={card.id} className="border-b border-[var(--table-row-border)] hover:bg-[var(--hover-bg)] transition-colors">
+                    <td className="px-5 py-3 text-[var(--text-primary)]">{card.bankName} *{card.cardNumber}</td>
+                    <td className="px-5 py-3 text-right text-[var(--text-primary)]">{formatCurrency(card.creditLimit)}</td>
+                    <td className="px-5 py-3 text-right font-semibold text-[var(--danger)]">{formatCurrency(card.balance)}</td>
+                    <td className="px-5 py-3 text-right text-[var(--success)]">{formatCurrency(card.creditLimit - card.balance)}</td>
+                    <td className="px-5 py-3 text-center text-[var(--text-primary)]">วันที่ {card.dueDate}</td>
+                  </tr>
+                ))}
+                {cards.length > 0 && (
+                  <tr className="bg-[var(--table-header-bg)] font-semibold">
+                    <td className="px-5 py-3 text-[var(--text-primary)]">รวม</td>
+                    <td className="px-5 py-3 text-right text-[var(--text-primary)]">{formatCurrency(totalLimit)}</td>
+                    <td className="px-5 py-3 text-right text-[var(--danger)]">{formatCurrency(totalDebt)}</td>
+                    <td className="px-5 py-3 text-right text-[var(--success)]">{formatCurrency(totalLimit - totalDebt)}</td>
+                    <td></td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
-          <div className="bg-[var(--modal-bg)] rounded-xl p-6 w-full max-w-md shadow-2xl transition-colors">
-            <h2 className="text-lg font-bold mb-5 text-[var(--text-primary)]">เพิ่มบัตรเครดิต</h2>
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowModal(false)}>
+          <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-[17px] font-semibold mb-5 text-[var(--text-primary)]">เพิ่มบัตรเครดิต</h2>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label className="block text-sm font-semibold mb-1 text-[var(--text-primary)]">ธนาคาร</label>
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">ธนาคาร</label>
                 <input type="text" value={formBank} onChange={(e) => setFormBank(e.target.value)} required placeholder="เช่น KBank, SCB, BBL" className={inputClass} />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-semibold mb-1 text-[var(--text-primary)]">เลขบัตร (4 หลักสุดท้าย)</label>
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">เลขบัตร (4 หลักสุดท้าย)</label>
                 <input type="text" value={formNumber} onChange={(e) => setFormNumber(e.target.value)} required maxLength={4} pattern="\d{4}" placeholder="1234" className={inputClass} />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-semibold mb-1 text-[var(--text-primary)]">วงเงิน (บาท)</label>
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">วงเงิน (บาท)</label>
                 <input type="number" value={formLimit} onChange={(e) => setFormLimit(e.target.value)} required min="0" className={inputClass} />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-semibold mb-1 text-[var(--text-primary)]">ยอดค้างชำระปัจจุบัน (บาท)</label>
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">ยอดค้างชำระปัจจุบัน (บาท)</label>
                 <input type="number" value={formBalance} onChange={(e) => setFormBalance(e.target.value)} min="0" className={inputClass} />
               </div>
-              <div className="mb-4">
-                <label className="block text-sm font-semibold mb-1 text-[var(--text-primary)]">วันครบกำหนดชำระ (วันที่ในเดือน)</label>
+              <div className="mb-5">
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">วันครบกำหนดชำระ (วันที่ในเดือน)</label>
                 <input type="number" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} required min="1" max="31" placeholder="เช่น 25" className={inputClass} />
               </div>
-              <div className="flex gap-3 justify-end">
+              <div className="flex gap-2.5 justify-end">
                 <button type="button" onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-[var(--input-border)] text-[var(--text-primary)] rounded-md text-sm font-semibold hover:bg-[var(--hover-bg)] transition-colors">ยกเลิก</button>
+                  className="px-4 py-2 border border-[var(--input-border)] text-[var(--text-primary)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">ยกเลิก</button>
                 <button type="submit"
-                  className="px-4 py-2 bg-[var(--brand-red)] text-white rounded-md text-sm font-semibold hover:opacity-90">บันทึก</button>
+                  className="px-4 py-2 bg-[var(--brand-red)] text-white rounded-lg text-[13px] font-medium hover:bg-[var(--brand-red-hover)] transition-colors">บันทึก</button>
               </div>
             </form>
           </div>

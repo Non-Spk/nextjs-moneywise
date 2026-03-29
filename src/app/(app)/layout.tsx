@@ -11,7 +11,6 @@ export default async function AppLayout({
 }) {
   const session = await auth();
 
-  // Redirect to login if not authenticated
   if (!session?.user) {
     redirect("/login");
   }
@@ -19,9 +18,9 @@ export default async function AppLayout({
   return (
     <SessionProvider>
       <ThemeProvider>
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen bg-[var(--page-bg)]">
           <Sidebar />
-          <main className="ml-60 flex-1 min-h-screen">{children}</main>
+          <main className="ml-[240px] flex-1 min-h-screen">{children}</main>
         </div>
       </ThemeProvider>
     </SessionProvider>

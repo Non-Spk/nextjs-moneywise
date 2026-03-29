@@ -7,12 +7,56 @@ import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "./ThemeProvider";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: "\u25A0" },
-  { href: "/transactions", label: "รายรับ-รายจ่าย", icon: "\u270E" },
-  { href: "/tax", label: "ภาษี & ลดหย่อน", icon: "\u2605" },
-  { href: "/credit-cards", label: "บัตรเครดิต & หนี้สิน", icon: "\u2666" },
-  { href: "/bills", label: "บิล & การแจ้งเตือน", icon: "\u23F0" },
+  { href: "/dashboard", label: "Dashboard", icon: "grid" },
+  { href: "/transactions", label: "รายรับ-รายจ่าย", icon: "arrows" },
+  { href: "/tax", label: "ภาษี & ลดหย่อน", icon: "doc" },
+  { href: "/credit-cards", label: "บัตรเครดิต & หนี้สิน", icon: "card" },
+  { href: "/bills", label: "บิล & การแจ้งเตือน", icon: "bell" },
 ];
+
+function NavIcon({ type, isActive }: { type: string; isActive: boolean }) {
+  const color = isActive ? "var(--brand-red)" : "var(--sidebar-text-muted)";
+  const size = 18;
+  switch (type) {
+    case "grid":
+      return (
+        <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+          <rect x="2" y="2" width="7" height="7" rx="2" fill={color} />
+          <rect x="11" y="2" width="7" height="7" rx="2" fill={color} opacity="0.6" />
+          <rect x="2" y="11" width="7" height="7" rx="2" fill={color} opacity="0.6" />
+          <rect x="11" y="11" width="7" height="7" rx="2" fill={color} opacity="0.4" />
+        </svg>
+      );
+    case "arrows":
+      return (
+        <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 4v12M6 4l-3 3M6 4l3 3M14 16V4M14 16l-3-3M14 16l3-3" />
+        </svg>
+      );
+    case "doc":
+      return (
+        <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 3h8l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z" />
+          <path d="M12 3v4h4M7 10h6M7 13h4" />
+        </svg>
+      );
+    case "card":
+      return (
+        <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="4" width="16" height="12" rx="2" />
+          <path d="M2 8h16M5 12h3" />
+        </svg>
+      );
+    case "bell":
+      return (
+        <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10 2a5 5 0 015 5c0 5 2 6 2 6H3s2-1 2-6a5 5 0 015-5zM8.5 17a1.5 1.5 0 003 0" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -20,12 +64,12 @@ export default function Sidebar() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <aside className="w-60 bg-[var(--sidebar-bg)] text-white fixed top-0 left-0 bottom-0 overflow-y-auto z-50 flex flex-col transition-colors duration-300">
+    <aside className="w-[240px] bg-[var(--sidebar-bg)] fixed top-0 left-0 bottom-0 overflow-y-auto z-50 flex flex-col">
       {/* Brand */}
-      <div className="px-5 py-5 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <Image src="/icon.png" alt="MoneyWise" width={36} height={36} />
-          <h2 className="text-xl font-bold leading-tight">
+      <div className="px-5 pt-6 pb-4">
+        <div className="flex items-center gap-2.5">
+          <Image src="/icon.png" alt="MoneyWise" width={28} height={28} className="rounded-md" />
+          <h2 className="text-[15px] font-semibold text-[var(--sidebar-text)] tracking-tight">
             Money<span className="text-[var(--brand-red)]">Wise</span>
           </h2>
         </div>
@@ -33,34 +77,37 @@ export default function Sidebar() {
 
       {/* User info */}
       {session?.user?.name && (
-        <div className="px-5 py-3 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-[var(--brand-red)] flex items-center justify-center text-xs font-bold">
+        <div className="px-5 pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-full bg-[var(--brand-red)] flex items-center justify-center text-[11px] font-semibold text-white">
               {session.user.name.charAt(0).toUpperCase()}
             </div>
-            <span className="text-xs text-white/60 truncate max-w-[140px]">
+            <span className="text-[13px] text-[var(--sidebar-text-muted)] truncate max-w-[140px]">
               {session.user.name}
             </span>
           </div>
         </div>
       )}
 
+      {/* Divider */}
+      <div className="mx-5 h-px bg-[var(--sidebar-divider)]" />
+
       {/* Navigation */}
-      <nav className="flex-1 mt-2">
-        <ul className="list-none">
+      <nav className="flex-1 px-3 pt-4">
+        <ul className="list-none space-y-0.5">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 px-5 py-3 text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 ${
                     isActive
-                      ? "bg-white/10 text-white border-l-3 border-[var(--brand-red)]"
-                      : "text-white/60 hover:bg-white/5 hover:text-white"
+                      ? "bg-[var(--sidebar-active)] text-[var(--sidebar-text)]"
+                      : "text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-text)]"
                   }`}
                 >
-                  <span className="w-5 text-center">{item.icon}</span>
+                  <NavIcon type={item.icon} isActive={isActive} />
                   {item.label}
                 </Link>
               </li>
@@ -69,39 +116,40 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      {/* Theme toggle + Logout */}
-      <div className="border-t border-white/10 p-4 space-y-3">
-        {/* Dark/Light toggle */}
-        <div className="flex items-center justify-between px-1">
-          <span className="text-xs text-white/50">
-            {theme === "dark" ? "Dark Mode" : "Light Mode"}
+      {/* Bottom section */}
+      <div className="px-3 pb-4 space-y-2">
+        {/* Theme toggle */}
+        <div className="flex items-center justify-between px-3 py-2">
+          <span className="text-[12px] text-[var(--sidebar-text-muted)]">
+            {theme === "dark" ? "Dark" : "Light"}
           </span>
           <button
             onClick={toggleTheme}
-            className="relative w-11 h-6 rounded-full transition-colors duration-300 cursor-pointer focus:outline-none"
+            className="relative w-10 h-[22px] rounded-full transition-colors duration-200 cursor-pointer focus:outline-none"
             style={{
-              backgroundColor: theme === "dark" ? "#EB2D2E" : "#555",
+              backgroundColor: theme === "dark" ? "var(--brand-red)" : "#636366",
             }}
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             role="switch"
             aria-checked={theme === "dark"}
           >
             <span
-              className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 flex items-center justify-center text-[10px]"
+              className="absolute top-[2px] left-[2px] w-[18px] h-[18px] bg-white rounded-full shadow-sm transition-transform duration-200"
               style={{
-                transform: theme === "dark" ? "translateX(20px)" : "translateX(0)",
+                transform: theme === "dark" ? "translateX(18px)" : "translateX(0)",
               }}
-            >
-              {theme === "dark" ? "\u263E" : "\u2600"}
-            </span>
+            />
           </button>
         </div>
 
+        {/* Logout */}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-3 px-4 py-2 text-sm text-white/40 hover:text-[var(--brand-red)] transition-colors w-full"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--brand-red)] transition-all duration-150 w-full"
         >
-          <span className="w-5 text-center">{"\u2794"}</span>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M7 17H4a1 1 0 01-1-1V4a1 1 0 011-1h3M13 14l4-4-4-4M17 10H7" />
+          </svg>
           ออกจากระบบ
         </button>
       </div>

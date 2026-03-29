@@ -39,39 +39,20 @@ export default function DashboardPage() {
     if (res.ok) setData(await res.json());
   }, [month]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  function renderCategoryBars(
-    categories: Record<string, number>,
-    color: string
-  ) {
+  function renderCategoryBars(categories: Record<string, number>, color: string) {
     const entries = Object.entries(categories).sort((a, b) => b[1] - a[1]);
     const max = entries.length > 0 ? entries[0][1] : 1;
-
     if (entries.length === 0) {
-      return (
-        <p className="text-sm text-[var(--text-secondary)] text-center py-4">
-          ไม่มีข้อมูล
-        </p>
-      );
+      return <p className="text-[13px] text-[var(--text-tertiary)] text-center py-6">ไม่มีข้อมูล</p>;
     }
-
     return entries.map(([cat, amount]) => (
-      <div key={cat} className="flex items-center gap-3 mb-2">
-        <span className="w-28 text-right text-xs text-[var(--text-secondary)] shrink-0">
-          {getCategoryLabel(cat)}
-        </span>
-        <div className="flex-1 h-5 bg-[var(--table-header-bg)] rounded overflow-hidden">
-          <div
-            className="h-full rounded text-[10px] text-white font-semibold flex items-center pl-2"
-            style={{
-              width: `${(amount / max) * 100}%`,
-              backgroundColor: color,
-              minWidth: "20px",
-            }}
-          >
+      <div key={cat} className="flex items-center gap-3 mb-2.5">
+        <span className="w-28 text-right text-[12px] text-[var(--text-secondary)] shrink-0">{getCategoryLabel(cat)}</span>
+        <div className="flex-1 h-6 bg-[var(--bg-subtle)] rounded-md overflow-hidden">
+          <div className="h-full rounded-md text-[10px] text-white font-medium flex items-center pl-2.5"
+            style={{ width: `${Math.max((amount / max) * 100, 8)}%`, backgroundColor: color }}>
             {formatCurrency(amount)}
           </div>
         </div>
@@ -79,80 +60,51 @@ export default function DashboardPage() {
     ));
   }
 
+  const stats = [
+    { label: "รายรับ", value: data?.totalIncome || 0, color: "var(--success)" },
+    { label: "รายจ่าย", value: data?.totalExpense || 0, color: "var(--danger)" },
+    { label: "คงเหลือ", value: data?.balance || 0, color: "var(--info)" },
+    { label: "หนี้บัตรเครดิต", value: data?.totalDebt || 0, color: "var(--warning)" },
+  ];
+
   return (
     <>
       <Topbar title="Dashboard" />
-      <div className="p-6">
-        {/* Month filter */}
-        <div className="mb-5">
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="px-3 py-2 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-md text-sm focus:border-[var(--brand-red)] outline-none transition-colors"
-          />
+      <div className="p-6 max-w-[1200px]">
+        <div className="mb-6">
+          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
+            className="px-3.5 py-2 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-[13px] focus:border-[var(--brand-red)] outline-none transition-colors" />
         </div>
 
         {/* Stats cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-[var(--card-bg)] rounded-lg p-5 shadow-[0_2px_5px_var(--shadow-color)] transition-colors">
-            <p className="text-xs text-[var(--text-secondary)] font-semibold uppercase tracking-wide">
-              รายรับ
-            </p>
-            <p className="text-2xl font-bold text-[var(--success)] mt-1">
-              {formatCurrency(data?.totalIncome || 0)}
-            </p>
-            <p className="text-[10px] text-[var(--text-secondary)]">บาท</p>
-          </div>
-          <div className="bg-[var(--card-bg)] rounded-lg p-5 shadow-[0_2px_5px_var(--shadow-color)] transition-colors">
-            <p className="text-xs text-[var(--text-secondary)] font-semibold uppercase tracking-wide">
-              รายจ่าย
-            </p>
-            <p className="text-2xl font-bold text-[var(--danger)] mt-1">
-              {formatCurrency(data?.totalExpense || 0)}
-            </p>
-            <p className="text-[10px] text-[var(--text-secondary)]">บาท</p>
-          </div>
-          <div className="bg-[var(--card-bg)] rounded-lg p-5 shadow-[0_2px_5px_var(--shadow-color)] transition-colors">
-            <p className="text-xs text-[var(--text-secondary)] font-semibold uppercase tracking-wide">
-              คงเหลือ
-            </p>
-            <p className="text-2xl font-bold text-[var(--info)] mt-1">
-              {formatCurrency(data?.balance || 0)}
-            </p>
-            <p className="text-[10px] text-[var(--text-secondary)]">บาท</p>
-          </div>
-          <div className="bg-[var(--card-bg)] rounded-lg p-5 shadow-[0_2px_5px_var(--shadow-color)] transition-colors">
-            <p className="text-xs text-[var(--text-secondary)] font-semibold uppercase tracking-wide">
-              หนี้บัตรเครดิต
-            </p>
-            <p className="text-2xl font-bold text-[var(--warning)] mt-1">
-              {formatCurrency(data?.totalDebt || 0)}
-            </p>
-            <p className="text-[10px] text-[var(--text-secondary)]">บาท</p>
-          </div>
+          {stats.map((stat) => (
+            <div key={stat.label} className="bg-[var(--card-bg)] rounded-xl p-5 shadow-[var(--shadow-card)] border border-[var(--card-border)] transition-colors">
+              <p className="text-[12px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">{stat.label}</p>
+              <p className="text-[22px] font-bold mt-1.5 tracking-tight" style={{ color: stat.color }}>{formatCurrency(stat.value)}</p>
+              <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">บาท</p>
+            </div>
+          ))}
         </div>
 
         {/* Category charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-          <div className="bg-[var(--card-bg)] rounded-lg p-5 shadow-[0_2px_5px_var(--shadow-color)] transition-colors">
-            <h3 className="font-bold text-sm mb-4 text-[var(--text-primary)]">รายจ่ายตามหมวดหมู่</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <div className="bg-[var(--card-bg)] rounded-xl p-5 shadow-[var(--shadow-card)] border border-[var(--card-border)] transition-colors">
+            <h3 className="font-semibold text-[14px] mb-4 text-[var(--text-primary)]">รายจ่ายตามหมวดหมู่</h3>
             {renderCategoryBars(data?.expenseByCategory || {}, "var(--danger)")}
           </div>
-          <div className="bg-[var(--card-bg)] rounded-lg p-5 shadow-[0_2px_5px_var(--shadow-color)] transition-colors">
-            <h3 className="font-bold text-sm mb-4 text-[var(--text-primary)]">รายรับตามหมวดหมู่</h3>
+          <div className="bg-[var(--card-bg)] rounded-xl p-5 shadow-[var(--shadow-card)] border border-[var(--card-border)] transition-colors">
+            <h3 className="font-semibold text-[14px] mb-4 text-[var(--text-primary)]">รายรับตามหมวดหมู่</h3>
             {renderCategoryBars(data?.incomeByCategory || {}, "var(--success)")}
           </div>
         </div>
 
         {/* Upcoming bills alert */}
         {data?.upcomingBills && data.upcomingBills.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 dark:bg-amber-900/20 dark:border-amber-800">
-            <h3 className="font-bold text-sm text-amber-800 mb-2 dark:text-amber-300">
-              บิลที่ใกล้ครบกำหนด
-            </h3>
+          <div className="bg-[var(--warning-bg)] rounded-xl p-4 mb-6">
+            <h3 className="font-semibold text-[13px] text-[var(--warning-text)] mb-2">บิลที่ใกล้ครบกำหนด</h3>
             {data.upcomingBills.map((bill) => (
-              <p key={bill.id} className="text-sm text-amber-700 dark:text-amber-400">
+              <p key={bill.id} className="text-[13px] text-[var(--warning-text)]">
                 {bill.name} - {formatCurrency(bill.amount)} บาท (วันที่ {bill.dueDay})
               </p>
             ))}
@@ -160,45 +112,37 @@ export default function DashboardPage() {
         )}
 
         {/* Recent transactions */}
-        <div className="bg-[var(--card-bg)] rounded-lg p-5 shadow-[0_2px_5px_var(--shadow-color)] transition-colors">
-          <h3 className="font-bold text-sm mb-4 text-[var(--text-primary)]">รายการล่าสุด</h3>
+        <div className="bg-[var(--card-bg)] rounded-xl shadow-[var(--shadow-card)] border border-[var(--card-border)] overflow-hidden transition-colors">
+          <div className="px-5 py-4">
+            <h3 className="font-semibold text-[14px] text-[var(--text-primary)]">รายการล่าสุด</h3>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-[var(--table-header-bg)]">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase">วันที่</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase">รายการ</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase">หมวดหมู่</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase">ช่องทาง</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-[var(--text-secondary)] uppercase">จำนวน</th>
+                <tr className="bg-[var(--table-header-bg)] border-y border-[var(--card-border)]">
+                  <th className="px-5 py-2.5 text-left text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">วันที่</th>
+                  <th className="px-5 py-2.5 text-left text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">รายการ</th>
+                  <th className="px-5 py-2.5 text-left text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">หมวดหมู่</th>
+                  <th className="px-5 py-2.5 text-left text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">ช่องทาง</th>
+                  <th className="px-5 py-2.5 text-right text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">จำนวน</th>
                 </tr>
               </thead>
               <tbody>
                 {data?.recentTransactions?.map((tx) => (
-                  <tr key={tx.id} className="border-b border-[var(--table-row-border)]">
-                    <td className="px-3 py-2.5 text-sm text-[var(--text-primary)]">
-                      {new Date(tx.date).toLocaleDateString("th-TH")}
+                  <tr key={tx.id} className="border-b border-[var(--table-row-border)] hover:bg-[var(--hover-bg)] transition-colors">
+                    <td className="px-5 py-3 text-[13px] text-[var(--text-primary)]">{new Date(tx.date).toLocaleDateString("th-TH")}</td>
+                    <td className="px-5 py-3 text-[13px] text-[var(--text-primary)]">{tx.note || "-"}</td>
+                    <td className="px-5 py-3 text-[13px] text-[var(--text-primary)]">{getCategoryLabel(tx.category)}</td>
+                    <td className="px-5 py-3 text-[13px]">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[var(--badge-muted-bg)] text-[var(--badge-muted-text)]">{getChannelLabel(tx.channel)}</span>
                     </td>
-                    <td className="px-3 py-2.5 text-sm text-[var(--text-primary)]">{tx.note || "-"}</td>
-                    <td className="px-3 py-2.5 text-sm text-[var(--text-primary)]">{getCategoryLabel(tx.category)}</td>
-                    <td className="px-3 py-2.5 text-sm">
-                      <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--badge-muted-bg)] text-[var(--badge-muted-text)]">
-                        {getChannelLabel(tx.channel)}
-                      </span>
-                    </td>
-                    <td className={`px-3 py-2.5 text-sm text-right font-semibold ${
-                      tx.type === "income" ? "text-[var(--success)]" : "text-[var(--danger)]"
-                    }`}>
+                    <td className={`px-5 py-3 text-[13px] text-right font-semibold ${tx.type === "income" ? "text-[var(--success)]" : "text-[var(--danger)]"}`}>
                       {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amount)}
                     </td>
                   </tr>
                 ))}
                 {(!data?.recentTransactions || data.recentTransactions.length === 0) && (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center text-sm text-[var(--text-secondary)]">
-                      ยังไม่มีรายการ
-                    </td>
-                  </tr>
+                  <tr><td colSpan={5} className="px-5 py-10 text-center text-[13px] text-[var(--text-tertiary)]">ยังไม่มีรายการ</td></tr>
                 )}
               </tbody>
             </table>
