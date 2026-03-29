@@ -15,6 +15,7 @@ export const EXPENSE_CATEGORIES = [
   { value: "withholding_tax", label: "ภาษี ณ ที่จ่าย" },
   { value: "social_security_expense", label: "ประกันสังคม (หัก)" },
   { value: "provident_fund_expense", label: "กองทุนสำรองเลี้ยงชีพ (หัก)" },
+  { value: "credit_card_payment", label: "ชำระหนี้บัตรเครดิต" },
   { value: "other_expense", label: "อื่นๆ" },
 ] as const;
 

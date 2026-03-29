@@ -23,6 +23,13 @@ export default function CreditCardsPage() {
   const [formBalance, setFormBalance] = useState("0");
   const [formDueDate, setFormDueDate] = useState("");
 
+  // Payment modal
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payCard, setPayCard] = useState<CreditCard | null>(null);
+  const [payAmount, setPayAmount] = useState("");
+  const [payChannel, setPayChannel] = useState("transfer");
+  const [payDate, setPayDate] = useState(new Date().toISOString().split("T")[0]);
+
   const fetchCards = useCallback(async () => {
     const res = await fetch("/api/credit-cards");
     if (res.ok) setCards(await res.json());
@@ -44,6 +51,25 @@ export default function CreditCardsPage() {
     if (!confirm("ต้องการลบบัตรเครดิตนี้?")) return;
     const res = await fetch(`/api/credit-cards/${id}`, { method: "DELETE" });
     if (res.ok) fetchCards();
+  }
+
+  function openPayModal(card: CreditCard) {
+    setPayCard(card);
+    setPayAmount(String(card.balance));
+    setPayChannel("transfer");
+    setPayDate(new Date().toISOString().split("T")[0]);
+    setShowPayModal(true);
+  }
+
+  async function handlePay(e: React.FormEvent) {
+    e.preventDefault();
+    if (!payCard) return;
+    const res = await fetch(`/api/credit-cards/${payCard.id}/pay`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: payAmount, channel: payChannel, date: payDate }),
+    });
+    if (res.ok) { setShowPayModal(false); setPayCard(null); fetchCards(); }
   }
 
   function getUsagePercent(card: CreditCard) {
@@ -106,6 +132,12 @@ export default function CreditCardsPage() {
                   <p className="text-[11px] text-[var(--cc-text-muted)]">ใช้ไป {usage.toFixed(0)}%</p>
                   <p className="text-[11px] text-[var(--cc-text-muted)]">ครบกำหนดวันที่ {card.dueDate}</p>
                 </div>
+                {card.balance > 0 && (
+                  <button onClick={() => openPayModal(card)}
+                    className="mt-4 w-full py-2 bg-[var(--cc-bg-accent)] text-[var(--cc-text)] rounded-lg text-[12px] font-medium hover:bg-[var(--cc-divider)] transition-colors border border-[var(--cc-divider)]">
+                    ชำระหนี้
+                  </button>
+                )}
               </div>
             );
           })}
@@ -127,6 +159,7 @@ export default function CreditCardsPage() {
                   <th className="px-5 py-2.5 text-right text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">ยอดค้างชำระ</th>
                   <th className="px-5 py-2.5 text-right text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">คงเหลือ</th>
                   <th className="px-5 py-2.5 text-center text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">ครบกำหนด</th>
+                  <th className="px-5 py-2.5 w-20"></th>
                 </tr>
               </thead>
               <tbody className="text-[13px]">
@@ -137,6 +170,14 @@ export default function CreditCardsPage() {
                     <td className="px-5 py-3 text-right font-semibold text-[var(--danger)]">{formatCurrency(card.balance)}</td>
                     <td className="px-5 py-3 text-right text-[var(--success)]">{formatCurrency(card.creditLimit - card.balance)}</td>
                     <td className="px-5 py-3 text-center text-[var(--text-primary)]">วันที่ {card.dueDate}</td>
+                    <td className="px-5 py-3 text-right">
+                      {card.balance > 0 && (
+                        <button onClick={() => openPayModal(card)}
+                          className="px-2.5 py-1 bg-[var(--success-bg)] text-[var(--success-text)] rounded-md text-[11px] font-medium transition-colors">
+                          ชำระ
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {cards.length > 0 && (
@@ -145,6 +186,7 @@ export default function CreditCardsPage() {
                     <td className="px-5 py-3 text-right text-[var(--text-primary)]">{formatCurrency(totalLimit)}</td>
                     <td className="px-5 py-3 text-right text-[var(--danger)]">{formatCurrency(totalDebt)}</td>
                     <td className="px-5 py-3 text-right text-[var(--success)]">{formatCurrency(totalLimit - totalDebt)}</td>
+                    <td></td>
                     <td></td>
                   </tr>
                 )}
@@ -184,6 +226,52 @@ export default function CreditCardsPage() {
                   className="px-4 py-2 border border-[var(--input-border)] text-[var(--text-primary)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">ยกเลิก</button>
                 <button type="submit"
                   className="px-4 py-2 bg-[var(--brand-red)] text-white rounded-lg text-[13px] font-medium hover:bg-[var(--brand-red-hover)] transition-colors">บันทึก</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showPayModal && payCard && (
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowPayModal(false)}>
+          <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-[17px] font-semibold mb-1 text-[var(--text-primary)]">ชำระหนี้บัตรเครดิต</h2>
+            <p className="text-[13px] text-[var(--text-secondary)] mb-5">{payCard.bankName} *{payCard.cardNumber} - ยอดค้าง {formatCurrency(payCard.balance)} บาท</p>
+            <form onSubmit={handlePay}>
+              <div className="mb-4">
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">จำนวนเงินที่ชำระ (บาท)</label>
+                <input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} required min="0.01" max={payCard.balance} step="0.01" className={inputClass} />
+                <div className="flex gap-2 mt-2">
+                  <button type="button" onClick={() => setPayAmount(String(payCard.balance))}
+                    className="px-2.5 py-1 bg-[var(--bg-subtle)] text-[var(--text-secondary)] rounded-md text-[11px] font-medium hover:bg-[var(--hover-bg)] transition-colors">
+                    ชำระเต็มจำนวน
+                  </button>
+                  <button type="button" onClick={() => setPayAmount(String(Math.min(payCard.balance, payCard.creditLimit * 0.1).toFixed(2)))}
+                    className="px-2.5 py-1 bg-[var(--bg-subtle)] text-[var(--text-secondary)] rounded-md text-[11px] font-medium hover:bg-[var(--hover-bg)] transition-colors">
+                    ขั้นต่ำ 10%
+                  </button>
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">ช่องทางชำระ</label>
+                <select value={payChannel} onChange={(e) => setPayChannel(e.target.value)} className={inputClass}>
+                  <option value="transfer">โอนเงิน</option>
+                  <option value="cash">เงินสด</option>
+                </select>
+              </div>
+              <div className="mb-5">
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">วันที่ชำระ</label>
+                <input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} required className={inputClass} />
+              </div>
+              {parseFloat(payAmount) > 0 && (
+                <div className="bg-[var(--bg-subtle)] rounded-lg p-3 mb-5 text-[12px]">
+                  <p className="text-[var(--text-primary)]">ยอดค้างหลังชำระ: <span className="font-semibold">{formatCurrency(Math.max(payCard.balance - parseFloat(payAmount), 0))} บาท</span></p>
+                </div>
+              )}
+              <div className="flex gap-2.5 justify-end">
+                <button type="button" onClick={() => setShowPayModal(false)}
+                  className="px-4 py-2 border border-[var(--input-border)] text-[var(--text-primary)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">ยกเลิก</button>
+                <button type="submit"
+                  className="px-4 py-2 bg-[var(--success)] text-white rounded-lg text-[13px] font-medium hover:bg-[var(--success)] transition-colors">ชำระเงิน</button>
               </div>
             </form>
           </div>

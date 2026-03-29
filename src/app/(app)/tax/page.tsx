@@ -43,6 +43,7 @@ export default function TaxPage() {
   const netIncome = Math.max(totalIncome - totalDeduction, 0);
   const estimatedTax = calculateTax(netIncome);
 
+  const buddhistYear = new Date().getFullYear() + 543;
   const selectedCategory = TAX_DEDUCTION_CATEGORIES.find((c) => c.value === formCategory);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -82,7 +83,7 @@ export default function TaxPage() {
         {/* Tax summary */}
         <div className="bg-[var(--card-bg)] rounded-xl p-5 shadow-[var(--shadow-card)] border border-[var(--card-border)] mb-6 transition-colors">
           <div className="flex justify-between items-center mb-5">
-            <h3 className="font-semibold text-[15px] text-[var(--text-primary)]">สรุปภาษีเงินได้บุคคลธรรมดา ปี 2568</h3>
+            <h3 className="font-semibold text-[15px] text-[var(--text-primary)]">สรุปภาษีเงินได้บุคคลธรรมดา ปี {buddhistYear}</h3>
             <div className="flex gap-2">
               <button onClick={() => exportToExcel("tax-deductions")}
                 className="px-4 py-2 bg-[var(--bg-subtle)] text-[var(--text-secondary)] border border-[var(--card-border)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">Export Excel</button>
@@ -147,7 +148,7 @@ export default function TaxPage() {
         {/* Tax brackets */}
         <div className="bg-[var(--card-bg)] rounded-xl shadow-[var(--shadow-card)] border border-[var(--card-border)] overflow-hidden transition-colors">
           <div className="px-5 py-4">
-            <h3 className="font-semibold text-[14px] text-[var(--text-primary)]">อัตราภาษีเงินได้บุคคลธรรมดา 2568</h3>
+            <h3 className="font-semibold text-[14px] text-[var(--text-primary)]">อัตราภาษีเงินได้บุคคลธรรมดา {buddhistYear}</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
