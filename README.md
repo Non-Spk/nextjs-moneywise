@@ -1,78 +1,89 @@
-# MoneyWise - ระบบจัดการเงินส่วนบุคคล
+# MoneyWise v1.0.0
 
-ระบบจัดการการเงินส่วนบุคคลแบบครบวงจร รองรับการบันทึกรายรับ-รายจ่าย, จัดการบัตรเครดิต, ติดตามบิลประจำ และคำนวณภาษีเงินได้บุคคลธรรมดา (ปีภาษี 2568)
+ระบบจัดการการเงินส่วนบุคคลแบบครบวงจร - บันทึกรายรับ-รายจ่าย, จัดการบัตรเครดิต, ติดตามบิลประจำ, คำนวณภาษีเงินได้บุคคลธรรมดา (ปีภาษี 2568) พร้อม Export Excel
 
 ## Tech Stack
 
 - **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
-- **Styling:** Tailwind CSS 4
-- **Database:** SQLite (via Prisma ORM)
-- **Authentication:** NextAuth.js v5 (Credentials provider, JWT strategy)
+- **Styling:** Tailwind CSS 4 + CSS Custom Properties (Design Token System)
+- **Database:** SQLite (Prisma ORM)
+- **Authentication:** NextAuth.js v5 (Credentials, JWT)
 - **Runtime:** React 19
+- **Design:** Apple Human Interface Guidelines inspired - MUJI minimal aesthetic
 
-## ฟีเจอร์หลัก
+## Features
 
 ### Dashboard
-- สรุปรายรับ-รายจ่ายรายเดือน
-- กราฟแท่งแยกตามหมวดหมู่ (รายรับ/รายจ่าย)
+- สรุปรายรับ-รายจ่ายรายเดือน (กรองตามเดือนได้)
+- กราฟแท่งแยกตามหมวดหมู่ รายรับ/รายจ่าย
 - แจ้งเตือนบิลที่ใกล้ครบกำหนด
 - รายการธุรกรรมล่าสุด
 
 ### รายรับ-รายจ่าย
-- บันทึกรายการรายรับ/รายจ่าย พร้อมหมวดหมู่ (อาหาร, เดินทาง, เงินเดือน, ฟรีแลนซ์ ฯลฯ)
-- รองรับช่องทางชำระ: เงินสด, โอนเงิน, บัตรเครดิต
+- บันทึกรายการพร้อมหมวดหมู่ 18 ประเภท (อาหาร, เดินทาง, เงินเดือน, ฟรีแลนซ์ ฯลฯ)
+- ช่องทางชำระ: เงินสด, โอนเงิน, บัตรเครดิต
 - เชื่อมโยงรายจ่ายกับบัตรเครดิตได้
-- ฟิลเตอร์ตามประเภท, ช่องทาง, หมวดหมู่ และเดือน
+- ฟิลเตอร์ตามประเภท, ช่องทาง, หมวดหมู่, เดือน
+- Export Excel
 
 ### บัตรเครดิต & หนี้สิน
 - เพิ่ม/ลบบัตรเครดิต (เก็บเฉพาะ 4 หลักสุดท้าย)
-- แสดงวงเงิน, ยอดค้างชำระ และ % การใช้งาน
+- แสดงวงเงิน, ยอดค้างชำระ, % การใช้งาน พร้อม color-coded indicator
 - ตารางสรุปหนี้สินรวมทุกบัตร
+- Export Excel
 
 ### บิล & การแจ้งเตือน
 - บันทึกบิลประจำ (ค่าน้ำ, ค่าไฟ, ค่าเช่า ฯลฯ)
 - ติดตามสถานะชำระ/ยังไม่ชำระ
-- แจ้งเตือนบิลที่ใกล้ครบกำหนดภายใน 7 วัน
+- แจ้งเตือนบิลใกล้ครบกำหนดภายใน 7 วัน (Topbar notification)
+- Export Excel
 
 ### ภาษี & ลดหย่อน
 - คำนวณภาษีเงินได้บุคคลธรรมดาแบบขั้นบันได (อัตราปี 2568)
-- ค่าลดหย่อนอัตโนมัติ: ส่วนตัว 60,000 บาท + ค่าใช้จ่าย 50% (สูงสุด 100,000 บาท)
-- บันทึกรายการลดหย่อนเพิ่มเติม 23+ ประเภท (ประกันชีวิต, RMF, SSF, Thai ESG, ดอกเบี้ยบ้าน ฯลฯ)
-- แสดงตารางอัตราภาษีแบบขั้นบันไดเป็นข้อมูลอ้างอิง
+- ค่าลดหย่อนอัตโนมัติ: ส่วนตัว 60,000 + ค่าใช้จ่าย 50% (สูงสุด 100,000)
+- รายการลดหย่อน 23+ ประเภท (ประกันชีวิต, RMF, SSF, Thai ESG, ดอกเบี้ยบ้าน ฯลฯ)
+- ตารางอัตราภาษีขั้นบันไดอ้างอิง
+- Export Excel
 
-## เริ่มต้นใช้งาน
+### ระบบทั่วไป
+- Dark / Light theme toggle
+- Responsive design
+- ระบบ Login / Register พร้อม password hashing (bcrypt)
+- Session-based auth guard ทุกหน้า
+- Frosted glass topbar with notification badge
 
-### ความต้องการ
+## Quick Start
+
+### Requirements
 - Node.js 18+
 - npm
 
-### ติดตั้ง
+### Install & Run
 
 ```bash
-# ติดตั้ง dependencies
 npm install
-
-# สร้างฐานข้อมูลและ migrate
 npx prisma migrate dev
-
-# รันเซิร์ฟเวอร์
 npm run dev
 ```
 
-เปิดเบราว์เซอร์ไปที่ [http://localhost:3000](http://localhost:3000)
+เปิด [http://localhost:3000](http://localhost:3000)
+
+หรือใช้ `MoneyWise.bat` (Windows) - จะรันเซิร์ฟเวอร์และเปิดเบราว์เซอร์ให้อัตโนมัติ
 
 ### Environment Variables
 
-สร้างไฟล์ `.env` ที่ root ของโปรเจกต์:
+สร้างไฟล์ `.env` ที่ root:
 
 ```env
 DATABASE_URL="file:./dev.db"
-NEXTAUTH_SECRET="your-secret-key"
+NEXTAUTH_SECRET="your-random-secret-key-here"
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
-## โครงสร้างโปรเจกต์
+> **สำคัญ:** ต้องเปลี่ยน `NEXTAUTH_SECRET` เป็นค่า random ของตัวเอง สร้างได้ด้วย `openssl rand -base64 32`
+
+## Project Structure
 
 ```
 src/
@@ -91,26 +102,30 @@ src/
 │   │   ├── transactions/       # CRUD รายรับ-รายจ่าย
 │   │   ├── credit-cards/       # CRUD บัตรเครดิต
 │   │   ├── bills/              # CRUD บิลประจำ
-│   │   └── tax-deductions/     # CRUD ค่าลดหย่อน
+│   │   ├── tax-deductions/     # CRUD ค่าลดหย่อน
+│   │   └── export/             # Export Excel (.xlsx)
 │   ├── login/                  # หน้า Login/Register
+│   ├── globals.css             # Design token system (light/dark)
 │   └── layout.tsx              # Root layout
 ├── components/
-│   ├── SessionProvider.tsx     # NextAuth session provider
-│   ├── Sidebar.tsx             # เมนูด้านซ้าย
-│   └── Topbar.tsx              # แถบด้านบน
+│   ├── SessionProvider.tsx     # NextAuth session wrapper
+│   ├── ThemeProvider.tsx       # Dark/Light theme context
+│   ├── Sidebar.tsx             # Navigation sidebar
+│   └── Topbar.tsx              # Top bar + notifications
 ├── lib/
 │   ├── auth.ts                 # NextAuth config
-│   ├── prisma.ts               # Prisma client
-│   ├── api-helpers.ts          # API utility functions
-│   └── constants.ts            # หมวดหมู่, อัตราภาษี, formatters
+│   ├── prisma.ts               # Prisma client singleton
+│   ├── api-helpers.ts          # Auth helper for API routes
+│   ├── constants.ts            # หมวดหมู่, อัตราภาษี, formatters
+│   └── export.ts               # Client-side Excel download
 └── types/
     └── next-auth.d.ts          # NextAuth type augmentation
 ```
 
 ## API Endpoints
 
-| Method | Endpoint | รายละเอียด |
-|--------|----------|------------|
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | POST | `/api/register` | สมัครสมาชิก |
 | GET/POST | `/api/transactions` | ดึง/สร้างรายการ |
 | DELETE | `/api/transactions/[id]` | ลบรายการ |
@@ -120,4 +135,19 @@ src/
 | PATCH/DELETE | `/api/bills/[id]` | อัปเดต/ลบบิล |
 | GET/POST | `/api/tax-deductions` | ดึง/สร้างค่าลดหย่อน |
 | DELETE | `/api/tax-deductions/[id]` | ลบค่าลดหย่อน |
-| GET | `/api/dashboard` | ข้อมูลสรุป dashboard |
+| GET | `/api/dashboard?month=YYYY-MM` | ข้อมูลสรุป dashboard |
+| GET | `/api/export?type=...` | Export Excel (.xlsx) |
+
+## Design System
+
+ใช้ CSS Custom Properties (design tokens) รองรับ light/dark theme:
+
+- Brand accent: `#C45C4A` (warm terracotta)
+- Semantic colors: success, warning, info, danger พร้อม bg/text pairs
+- Apple HIG-inspired typography scale, spacing, border-radius
+- Frosted glass topbar (`backdrop-blur`)
+- Consistent card shadows, rounded corners (`rounded-xl`, `rounded-2xl`)
+
+## License
+
+MIT
