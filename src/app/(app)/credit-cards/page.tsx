@@ -80,31 +80,31 @@ export default function CreditCardsPage() {
             const usage = getUsagePercent(card);
             const usageColor = getUsageColor(usage);
             return (
-              <div key={card.id} className="bg-[var(--charcoal)] rounded-2xl p-6 relative overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full" style={{ backgroundColor: usageColor, opacity: 0.06 }} />
+              <div key={card.id} className="bg-[var(--cc-bg)] rounded-2xl p-6 relative overflow-hidden border border-[var(--cc-divider)]">
+                <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full" style={{ backgroundColor: usageColor, opacity: 0.08 }} />
                 <div className="flex justify-between items-start relative">
-                  <p className="text-[11px] font-semibold text-[var(--sidebar-text-muted)] uppercase tracking-wider">{card.bankName}</p>
-                  <button onClick={() => handleDelete(card.id)} className="text-[var(--sidebar-text-muted)] hover:text-[var(--danger)] transition-colors">
+                  <p className="text-[11px] font-semibold text-[var(--cc-text-muted)] uppercase tracking-wider">{card.bankName}</p>
+                  <button onClick={() => handleDelete(card.id)} className="text-[var(--cc-text-muted)] hover:text-[var(--danger)] transition-colors">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
                   </button>
                 </div>
-                <p className="text-[15px] font-semibold mt-5 tracking-[0.2em] text-white">**** **** **** {card.cardNumber}</p>
+                <p className="text-[15px] font-semibold mt-5 tracking-[0.2em] text-[var(--cc-text)]">**** **** **** {card.cardNumber}</p>
                 <div className="flex justify-between mt-5">
                   <div>
-                    <p className="text-[10px] text-[var(--sidebar-text-muted)] uppercase tracking-wide">ยอดค้างชำระ</p>
-                    <p className="text-[18px] font-bold text-white mt-0.5">{formatCurrency(card.balance)}</p>
+                    <p className="text-[10px] text-[var(--cc-text-muted)] uppercase tracking-wide">ยอดค้างชำระ</p>
+                    <p className="text-[18px] font-bold text-[var(--cc-text)] mt-0.5">{formatCurrency(card.balance)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-[var(--sidebar-text-muted)] uppercase tracking-wide">วงเงิน</p>
-                    <p className="text-[14px] font-semibold text-[var(--sidebar-text)] mt-0.5">{formatCurrency(card.creditLimit)}</p>
+                    <p className="text-[10px] text-[var(--cc-text-muted)] uppercase tracking-wide">วงเงิน</p>
+                    <p className="text-[14px] font-semibold text-[var(--cc-text)] mt-0.5">{formatCurrency(card.creditLimit)}</p>
                   </div>
                 </div>
-                <div className="mt-4 bg-[var(--sidebar-divider)] h-1.5 rounded-full overflow-hidden">
+                <div className="mt-4 bg-[var(--cc-divider)] h-1.5 rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all" style={{ width: `${usage}%`, backgroundColor: usageColor }} />
                 </div>
                 <div className="flex justify-between mt-2">
-                  <p className="text-[11px] text-[var(--sidebar-text-muted)]">ใช้ไป {usage.toFixed(0)}%</p>
-                  <p className="text-[11px] text-[var(--sidebar-text-muted)]">ครบกำหนดวันที่ {card.dueDate}</p>
+                  <p className="text-[11px] text-[var(--cc-text-muted)]">ใช้ไป {usage.toFixed(0)}%</p>
+                  <p className="text-[11px] text-[var(--cc-text-muted)]">ครบกำหนดวันที่ {card.dueDate}</p>
                 </div>
               </div>
             );

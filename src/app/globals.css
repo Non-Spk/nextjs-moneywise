@@ -66,6 +66,13 @@
   --shadow-md: 0 2px 12px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
   --shadow-card: 0 0.5px 1px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  /* Credit card visual */
+  --cc-bg: #1D1D1F;
+  --cc-bg-accent: #2C2C2E;
+  --cc-text: #FFFFFF;
+  --cc-text-muted: #98989D;
+  --cc-divider: #38383A;
 }
 
 [data-theme="dark"] {
@@ -122,6 +129,13 @@
   --charcoal: #F5F5F7;
   --dark-warm: #E5E5EA;
   --medium-warm: #98989D;
+
+  /* Credit card visual - slightly lighter in dark mode for contrast */
+  --cc-bg: #2C2C2E;
+  --cc-bg-accent: #3A3A3C;
+  --cc-text: #F5F5F7;
+  --cc-text-muted: #8E8E93;
+  --cc-divider: #48484A;
 }
 
 body {
