@@ -31,11 +31,19 @@ interface CreditCard {
   cardNumber: string;
 }
 
+interface CustomCategory {
+  id: string;
+  type: string;
+  value: string;
+  label: string;
+}
+
 type ModalMode = "simple" | "salary" | "expense_change";
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("simple");
 
@@ -87,7 +95,12 @@ export default function TransactionsPage() {
     if (res.ok) setCreditCards(await res.json());
   }, []);
 
-  useEffect(() => { fetchTransactions(); fetchCreditCards(); }, [fetchTransactions, fetchCreditCards]);
+  const fetchCustomCategories = useCallback(async () => {
+    const res = await fetch("/api/categories");
+    if (res.ok) setCustomCategories(await res.json());
+  }, []);
+
+  useEffect(() => { fetchTransactions(); fetchCreditCards(); fetchCustomCategories(); }, [fetchTransactions, fetchCreditCards, fetchCustomCategories]);
 
   async function handleSimpleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -184,9 +197,20 @@ export default function TransactionsPage() {
     setShowModal(true);
   }
 
-  const categoryOptions = formType === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const customExpense = customCategories.filter((c) => c.type === "expense").map((c) => ({ value: c.value, label: c.label }));
+  const customIncome = customCategories.filter((c) => c.type === "income").map((c) => ({ value: c.value, label: c.label }));
+  const allExpenseCategories = [...EXPENSE_CATEGORIES, ...customExpense];
+  const allIncomeCategories = [...INCOME_CATEGORIES, ...customIncome];
+  const allCategoriesMerged = [...ALL_CATEGORIES, ...customExpense, ...customIncome];
+
+  const categoryOptions = formType === "income" ? allIncomeCategories : allExpenseCategories;
   const selectClass = "px-3.5 py-2 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-[13px] outline-none focus:border-[var(--brand-red)] transition-colors";
   const inputClass = "w-full px-3.5 py-2.5 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-[13px] outline-none focus:border-[var(--brand-red)] transition-colors";
+
+  function getLabel(value: string) {
+    const found = allCategoriesMerged.find((c) => c.value === value);
+    return found?.label || getCategoryLabel(value);
+  }
 
   const salaryNet = (parseFloat(salaryGross) || 0) - (parseFloat(salaryTax) || 0) - (parseFloat(salarySS) || 0) - (parseFloat(salaryPF) || 0) - (parseFloat(salaryOther) || 0);
   const expChange = (parseFloat(expPaid) || 0) - (parseFloat(expActual) || 0);
@@ -227,7 +251,7 @@ export default function TransactionsPage() {
           </select>
           <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className={selectClass}>
             <option value="">ทุกหมวดหมู่</option>
-            {ALL_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            {allCategoriesMerged.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
           <input type="month" value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} className={selectClass} />
         </div>
@@ -253,7 +277,7 @@ export default function TransactionsPage() {
                       {tx.note || "-"}
                       {tx.groupId && <span className="ml-1.5 inline-block px-1.5 py-0 rounded text-[9px] font-medium bg-[var(--info-bg)] text-[var(--info-text)]">กลุ่ม</span>}
                     </td>
-                    <td className="px-5 py-3 text-[13px] text-[var(--text-primary)]">{getCategoryLabel(tx.category)}</td>
+                    <td className="px-5 py-3 text-[13px] text-[var(--text-primary)]">{getLabel(tx.category)}</td>
                     <td className="px-5 py-3 text-[13px]">
                       <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[var(--badge-muted-bg)] text-[var(--badge-muted-text)]">
                         {getChannelLabel(tx.channel)}{tx.creditCard ? ` (${tx.creditCard.bankName} *${tx.creditCard.cardNumber})` : ""}
@@ -412,7 +436,7 @@ export default function TransactionsPage() {
                   <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">หมวดหมู่</label>
                   <select value={expCategory} onChange={(e) => setExpCategory(e.target.value)} required className={inputClass}>
                     <option value="">เลือกหมวดหมู่</option>
-                    {EXPENSE_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                    {allExpenseCategories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-3 mb-4">

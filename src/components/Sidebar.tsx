@@ -13,6 +13,7 @@ const navItems = [
   { href: "/tax", label: "ภาษี & ลดหย่อน", icon: "doc" },
   { href: "/credit-cards", label: "บัตรเครดิต & หนี้สิน", icon: "card" },
   { href: "/bills", label: "บิล & การแจ้งเตือน", icon: "bell" },
+  { href: "/settings", label: "ตั้งค่า", icon: "settings" },
 ];
 
 function NavIcon({ type, isActive }: { type: string; isActive: boolean }) {
@@ -61,6 +62,13 @@ function NavIcon({ type, isActive }: { type: string; isActive: boolean }) {
           <path d="M2 17v-1a5 5 0 015-5h0" />
           <circle cx="14" cy="7" r="2.5" />
           <path d="M18 17v-1a4 4 0 00-4-4h0" />
+        </svg>
+      );
+    case "settings":
+      return (
+        <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="10" cy="10" r="2.5" />
+          <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" />
         </svg>
       );
     default:

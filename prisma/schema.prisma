@@ -18,6 +18,7 @@ model User {
   bills        Bill[]
   deductions   TaxDeduction[]
   lendings     Lending[]
+  categories   Category[]
 }
 
 model Transaction {
@@ -85,4 +86,16 @@ model Lending {
   returnedAmount Float  @default(0)
   createdAt   DateTime  @default(now())
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "income" | "expense"
+  value     String   // unique key per user+type
+  label     String   // display name
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, value])
 }
