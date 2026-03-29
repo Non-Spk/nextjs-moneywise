@@ -40,10 +40,27 @@ interface CustomCategory {
 
 type ModalMode = "simple" | "salary" | "expense_change";
 
+interface SmartDefaults {
+  type: string;
+  category: string;
+  channel: string;
+  expenseCategory: string;
+  incomeCategory: string;
+}
+
+const FALLBACK_DEFAULTS: SmartDefaults = {
+  type: "expense",
+  category: "",
+  channel: "cash",
+  expenseCategory: "",
+  incomeCategory: "",
+};
+
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
+  const [defaults, setDefaults] = useState<SmartDefaults>(FALLBACK_DEFAULTS);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("simple");
 
@@ -100,7 +117,15 @@ export default function TransactionsPage() {
     if (res.ok) setCustomCategories(await res.json());
   }, []);
 
-  useEffect(() => { fetchTransactions(); fetchCreditCards(); fetchCustomCategories(); }, [fetchTransactions, fetchCreditCards, fetchCustomCategories]);
+  const fetchDefaults = useCallback(async () => {
+    const res = await fetch("/api/transactions/defaults");
+    if (res.ok) {
+      const d = await res.json();
+      setDefaults(d);
+    }
+  }, []);
+
+  useEffect(() => { fetchTransactions(); fetchCreditCards(); fetchCustomCategories(); fetchDefaults(); }, [fetchTransactions, fetchCreditCards, fetchCustomCategories, fetchDefaults]);
 
   async function handleSimpleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -113,7 +138,7 @@ export default function TransactionsPage() {
         creditCardId: formChannel === "credit" ? formCreditCardId : null,
       }),
     });
-    if (res.ok) { setShowModal(false); resetForm(); fetchTransactions(); }
+    if (res.ok) { setShowModal(false); resetForm(); fetchTransactions(); fetchDefaults(); }
   }
 
   async function handleSalarySubmit(e: React.FormEvent) {
@@ -150,7 +175,7 @@ export default function TransactionsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ items }),
     });
-    if (res.ok) { setShowModal(false); resetForm(); fetchTransactions(); }
+    if (res.ok) { setShowModal(false); resetForm(); fetchTransactions(); fetchDefaults(); }
   }
 
   async function handleExpChangeSubmit(e: React.FormEvent) {
@@ -171,7 +196,7 @@ export default function TransactionsPage() {
         creditCardId: expChannel === "credit" ? expCreditCardId : null,
       }),
     });
-    if (res.ok) { setShowModal(false); resetForm(); fetchTransactions(); }
+    if (res.ok) { setShowModal(false); resetForm(); fetchTransactions(); fetchDefaults(); }
   }
 
   async function handleDelete(id: string) {
@@ -181,13 +206,16 @@ export default function TransactionsPage() {
   }
 
   function resetForm() {
-    setFormType("expense"); setFormCategory(""); setFormChannel("cash");
+    const defType = defaults.type || "expense";
+    const defChannel = defaults.channel || "cash";
+    const defCat = defType === "income" ? (defaults.incomeCategory || "") : (defaults.expenseCategory || "");
+    setFormType(defType); setFormCategory(defCat); setFormChannel(defChannel);
     setFormAmount(""); setFormNote(""); setFormDate(new Date().toISOString().split("T")[0]);
     setFormCreditCardId("");
     setSalaryGross(""); setSalaryTax(""); setSalarySS(""); setSalaryPF("");
-    setSalaryOther(""); setSalaryOtherNote(""); setSalaryChannel("transfer");
+    setSalaryOther(""); setSalaryOtherNote(""); setSalaryChannel(defChannel);
     setSalaryDate(new Date().toISOString().split("T")[0]);
-    setExpPaid(""); setExpActual(""); setExpCategory(""); setExpChannel("cash");
+    setExpPaid(""); setExpActual(""); setExpCategory(defaults.expenseCategory || ""); setExpChannel(defChannel);
     setExpNote(""); setExpDate(new Date().toISOString().split("T")[0]); setExpCreditCardId("");
   }
 
