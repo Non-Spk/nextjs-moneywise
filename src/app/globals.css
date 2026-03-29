@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+:root {
+  --brand-red: #EB2D2E;
+  --dark-charcoal: #222222;
+  --medium-gray: #3D3D3D;
+  --body-text: #666666;
+  --light-bg: #F6F6F6;
+  --dark-text: #333333;
+  --success: #27ae60;
+  --warning: #f39c12;
+  --info: #3498db;
+  --danger: #e74c3c;
+}
+
+body {
+  font-family: "Open Sans", Arial, sans-serif;
+}
