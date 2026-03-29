@@ -102,8 +102,8 @@ export async function GET(req: Request) {
   const investments = await prisma.investment.findMany({
     where: { userId: result.userId },
   });
-  const totalInvestment = investments.reduce((sum, i) => sum + i.currentValue, 0);
-  const totalInvestmentCost = investments.reduce((sum, i) => sum + i.costBasis, 0);
+  const totalInvestment = investments.reduce((sum, i) => sum + i.currentValue * i.exchangeRate, 0);
+  const totalInvestmentCost = investments.reduce((sum, i) => sum + i.costBasis * i.exchangeRate, 0);
 
   // Get physical assets summary
   const physicalAssets = await prisma.physicalAsset.findMany({

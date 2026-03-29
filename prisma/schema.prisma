@@ -130,11 +130,13 @@ model SavingsTransaction {
 model Investment {
   id            String                @id @default(cuid())
   userId        String
-  name          String                // ชื่อ เช่น "ทองคำแท่ง 1 บาท", "SCBSET", "BTC"
+  name          String
   type          String                // "gold" | "stock" | "fund" | "crypto" | "bond" | "other"
-  costBasis     Float                 @default(0) // ต้นทุนรวม
-  currentValue  Float                 @default(0) // มูลค่าปัจจุบัน
-  units         Float                 @default(0) // จำนวนหน่วย
+  currency      String                @default("THB") // "THB" | "USD" | "EUR" | "JPY" | "CNY"
+  exchangeRate  Float                 @default(1) // rate to THB (e.g. 1 USD = 34.5 THB)
+  costBasis     Float                 @default(0) // ต้นทุนรวม (ในสกุลเงินต้นทาง)
+  currentValue  Float                 @default(0) // มูลค่าปัจจุบัน (ในสกุลเงินต้นทาง)
+  units         Float                 @default(0)
   note          String                @default("")
   createdAt     DateTime              @default(now())
   updatedAt     DateTime              @updatedAt

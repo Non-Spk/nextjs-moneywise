@@ -57,6 +57,16 @@ export const PHYSICAL_ASSET_TYPES = [
   { value: "other", label: "อื่นๆ" },
 ] as const;
 
+export const CURRENCIES = [
+  { value: "THB", label: "THB (บาท)", symbol: "฿" },
+  { value: "USD", label: "USD (ดอลลาร์)", symbol: "$" },
+  { value: "EUR", label: "EUR (ยูโร)", symbol: "€" },
+  { value: "JPY", label: "JPY (เยน)", symbol: "¥" },
+  { value: "CNY", label: "CNY (หยวน)", symbol: "¥" },
+  { value: "GBP", label: "GBP (ปอนด์)", symbol: "£" },
+  { value: "SGD", label: "SGD (สิงคโปร์)", symbol: "S$" },
+] as const;
+
 // Thai tax deduction categories for year 2568
 export const TAX_DEDUCTION_CATEGORIES = [
   { value: "personal", label: "ค่าลดหย่อนส่วนตัว", maxLimit: 60000 },

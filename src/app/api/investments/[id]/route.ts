@@ -9,7 +9,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const { id } = await params;
   const body = await req.json();
-  const { type, amount, units, pricePerUnit, note, date } = body;
+  const { type, amount, units, pricePerUnit, note, date, exchangeRate } = body;
 
   const inv = await prisma.investment.findFirst({
     where: { id, userId: result.userId },
@@ -19,6 +19,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const txAmount = parseFloat(amount) || 0;
   const txUnits = parseFloat(units) || 0;
   const txDate = new Date(date || new Date());
+  const rate = inv.exchangeRate;
+
+  // Update exchange rate if provided
+  if (exchangeRate && parseFloat(exchangeRate) > 0) {
+    await prisma.investment.update({
+      where: { id },
+      data: { exchangeRate: parseFloat(exchangeRate) },
+    });
+  }
 
   if (type === "buy") {
     await prisma.investment.update({
@@ -32,7 +41,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await prisma.transaction.create({
       data: {
         userId: result.userId, type: "expense", category: "investment_buy",
-        channel: "transfer", amount: txAmount, note: `ซื้อเพิ่ม ${inv.name}`, date: txDate,
+        channel: "transfer", amount: txAmount * rate,
+        note: `ซื้อเพิ่ม ${inv.name}${inv.currency !== "THB" ? ` (${txAmount} ${inv.currency} @ ${rate})` : ""}`,
+        date: txDate,
       },
     });
   } else if (type === "sell") {
@@ -51,7 +62,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await prisma.transaction.create({
       data: {
         userId: result.userId, type: "income", category: "investment_sell",
-        channel: "transfer", amount: txAmount, note: `ขาย ${inv.name}`, date: txDate,
+        channel: "transfer", amount: txAmount * rate,
+        note: `ขาย ${inv.name}${inv.currency !== "THB" ? ` (${txAmount} ${inv.currency} @ ${rate})` : ""}`,
+        date: txDate,
       },
     });
   } else if (type === "value_update") {
@@ -59,6 +72,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       where: { id },
       data: { currentValue: txAmount },
     });
+  } else if (type === "rate_update") {
+    // Only update exchange rate (already done above)
   }
 
   await prisma.investmentTransaction.create({

@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   if ("error" in result) return result.error;
 
   const body = await req.json();
-  const { name, type, amount, units, pricePerUnit, note, date } = body;
+  const { name, type, amount, units, pricePerUnit, note, date, currency, exchangeRate } = body;
 
   if (!name || !type || !amount) {
     return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" }, { status: 400 });
@@ -28,11 +28,15 @@ export async function POST(req: Request) {
 
   const cost = parseFloat(amount);
   const u = parseFloat(units) || 0;
+  const cur = currency || "THB";
+  const rate = parseFloat(exchangeRate) || 1;
 
   const investment = await prisma.investment.create({
     data: {
       userId: result.userId,
       name, type,
+      currency: cur,
+      exchangeRate: rate,
       costBasis: cost,
       currentValue: cost,
       units: u,
@@ -53,15 +57,15 @@ export async function POST(req: Request) {
     },
   });
 
-  // Create main transaction (expense - investment_buy)
+  // Create main transaction (expense in THB)
   await prisma.transaction.create({
     data: {
       userId: result.userId,
       type: "expense",
       category: "investment_buy",
       channel: "transfer",
-      amount: cost,
-      note: `ซื้อ ${name}`,
+      amount: cost * rate, // convert to THB
+      note: `ซื้อ ${name}${cur !== "THB" ? ` (${cost} ${cur} @ ${rate})` : ""}`,
       date: new Date(date || new Date()),
     },
   });
