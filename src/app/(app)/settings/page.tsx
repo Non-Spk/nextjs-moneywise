@@ -43,8 +43,12 @@ export default function SettingsPage() {
       setShowModal(false); setFormValue(""); setFormLabel(""); setError("");
       fetchCategories();
     } else {
-      const data = await res.json();
-      setError(data.error || "เกิดข้อผิดพลาด");
+      try {
+        const data = await res.json();
+        setError(data.error || "เกิดข้อผิดพลาด");
+      } catch {
+        setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+      }
     }
   }
 

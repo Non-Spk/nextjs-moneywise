@@ -26,8 +26,8 @@ export async function POST(req: Request) {
   }
 
   // Check duplicate
-  const existing = await prisma.category.findUnique({
-    where: { userId_type_value: { userId: result.userId, type, value } },
+  const existing = await prisma.category.findFirst({
+    where: { userId: result.userId, type, value },
   });
   if (existing) {
     return NextResponse.json({ error: "หมวดหมู่นี้มีอยู่แล้ว" }, { status: 409 });
