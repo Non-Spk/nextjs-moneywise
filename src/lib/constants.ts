@@ -17,6 +17,7 @@ export const EXPENSE_CATEGORIES = [
   { value: "provident_fund_expense", label: "กองทุนสำรองเลี้ยงชีพ (หัก)" },
   { value: "credit_card_payment", label: "ชำระหนี้บัตรเครดิต" },
   { value: "savings_deposit", label: "ฝากเงินออม" },
+  { value: "investment_buy", label: "ซื้อลงทุน" },
   { value: "other_expense", label: "อื่นๆ" },
 ] as const;
 
@@ -27,6 +28,7 @@ export const INCOME_CATEGORIES = [
   { value: "investment_return", label: "ผลตอบแทนลงทุน" },
   { value: "cashback", label: "Cashback บัตรเครดิต" },
   { value: "savings_withdraw", label: "ถอนเงินออม" },
+  { value: "investment_sell", label: "ขายลงทุน" },
   { value: "other_income", label: "อื่นๆ" },
 ] as const;
 
@@ -36,6 +38,23 @@ export const CHANNELS = [
   { value: "cash", label: "เงินสด" },
   { value: "transfer", label: "โอนเงิน" },
   { value: "credit", label: "บัตรเครดิต" },
+] as const;
+
+export const INVESTMENT_TYPES = [
+  { value: "gold", label: "ทองคำ" },
+  { value: "stock", label: "หุ้น" },
+  { value: "fund", label: "กองทุน" },
+  { value: "crypto", label: "คริปโต" },
+  { value: "bond", label: "พันธบัตร/ตราสารหนี้" },
+  { value: "other", label: "อื่นๆ" },
+] as const;
+
+export const PHYSICAL_ASSET_TYPES = [
+  { value: "gold", label: "ทองคำ" },
+  { value: "property", label: "อสังหาริมทรัพย์" },
+  { value: "vehicle", label: "ยานพาหนะ" },
+  { value: "collectible", label: "ของสะสม" },
+  { value: "other", label: "อื่นๆ" },
 ] as const;
 
 // Thai tax deduction categories for year 2568
@@ -82,6 +101,16 @@ export function getCategoryLabel(value: string): string {
 // Get channel label from value
 export function getChannelLabel(value: string): string {
   const found = CHANNELS.find((c) => c.value === value);
+  return found?.label || value;
+}
+
+export function getInvestmentTypeLabel(value: string): string {
+  const found = INVESTMENT_TYPES.find((c) => c.value === value);
+  return found?.label || value;
+}
+
+export function getPhysicalAssetTypeLabel(value: string): string {
+  const found = PHYSICAL_ASSET_TYPES.find((c) => c.value === value);
   return found?.label || value;
 }
 

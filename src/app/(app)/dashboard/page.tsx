@@ -15,6 +15,9 @@ interface DashboardData {
   totalDebt: number;
   totalCashback: number;
   totalSavings: number;
+  totalInvestment: number;
+  totalInvestmentCost: number;
+  totalPhysicalAssets: number;
   totalLent: number;
   lendingByBorrower: Record<string, number>;
   expenseByCategory: Record<string, number>;
@@ -67,14 +70,26 @@ export default function DashboardPage() {
     ));
   }
 
-  const stats = [
+  const debt = data?.totalDebt || 0;
+  const cashback = data?.totalCashback || 0;
+  const netDebt = Math.max(debt - cashback, 0);
+  const available = (data?.balance || 0) - netDebt;
+
+  const cashFlowCards = [
     { label: "รายรับ", value: data?.totalIncome || 0, color: "var(--success)" },
     { label: "รายจ่าย", value: data?.totalExpense || 0, color: "var(--danger)" },
     { label: "คงเหลือ", value: data?.balance || 0, color: "var(--info)" },
-    { label: "หนี้บัตรเครดิต", value: data?.totalDebt || 0, color: "var(--warning)" },
+    { label: "ยอดค้างชำระ", value: netDebt, color: "var(--warning)" },
+    { label: "Cashback", value: cashback, color: "var(--success)" },
+    { label: "ใช้ได้จริง", value: available, color: "var(--text-primary)" },
+  ];
+
+  const assetCards = [
     { label: "เงินออม", value: data?.totalSavings || 0, color: "var(--success)" },
-    { label: "Cashback", value: data?.totalCashback || 0, color: "var(--info)" },
+    { label: "เงินลงทุน", value: data?.totalInvestment || 0, color: "var(--info)" },
+    { label: "สินทรัพย์อื่น", value: data?.totalPhysicalAssets || 0, color: "var(--warning)" },
     { label: "ให้ยืมค้าง", value: data?.totalLent || 0, color: "var(--warning)" },
+    { label: "ทรัพย์สินรวม", value: (data?.totalSavings || 0) + (data?.totalInvestment || 0) + (data?.totalPhysicalAssets || 0) + (data?.totalLent || 0), color: "var(--text-primary)" },
   ];
 
   return (
@@ -113,15 +128,30 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Stats cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {stats.map((stat) => (
-            <div key={stat.label} className="bg-[var(--card-bg)] rounded-xl p-5 shadow-[var(--shadow-card)] border border-[var(--card-border)] transition-colors">
-              <p className="text-[12px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">{stat.label}</p>
-              <p className="text-[22px] font-bold mt-1.5 tracking-tight" style={{ color: stat.color }}>{formatCurrency(stat.value)}</p>
-              <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">บาท</p>
-            </div>
-          ))}
+        {/* Cash flow */}
+        <div className="mb-2">
+          <p className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-3">กระแสเงินสด</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            {cashFlowCards.map((stat) => (
+              <div key={stat.label} className="bg-[var(--card-bg)] rounded-xl p-4 shadow-[var(--shadow-card)] border border-[var(--card-border)] transition-colors">
+                <p className="text-[11px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">{stat.label}</p>
+                <p className="text-[18px] font-bold mt-1 tracking-tight" style={{ color: stat.color }}>{formatCurrency(stat.value)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Assets */}
+        <div className="mb-6">
+          <p className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-3">ทรัพย์สิน</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {assetCards.map((stat) => (
+              <div key={stat.label} className="bg-[var(--card-bg)] rounded-xl p-4 shadow-[var(--shadow-card)] border border-[var(--card-border)] transition-colors">
+                <p className="text-[11px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">{stat.label}</p>
+                <p className="text-[18px] font-bold mt-1 tracking-tight" style={{ color: stat.color }}>{formatCurrency(stat.value)}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Category charts */}

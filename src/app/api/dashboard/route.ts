@@ -36,10 +36,10 @@ export async function GET(req: Request) {
   });
 
   // Internal transfer categories - not real income/expenses but affect cash flow
-  const INTERNAL_EXPENSE = ["credit_card_payment", "savings_deposit"];
-  const INTERNAL_INCOME = ["cashback", "savings_withdraw"];
+  const INTERNAL_EXPENSE = ["credit_card_payment", "savings_deposit", "investment_buy"];
+  const INTERNAL_INCOME = ["cashback", "savings_withdraw", "investment_sell"];
 
-  // Real income/expense (for display cards)
+  // Real income/expense (for display)
   const totalIncome = transactions
     .filter((t) => t.type === "income" && !INTERNAL_INCOME.includes(t.category))
     .reduce((sum, t) => sum + t.amount, 0);
@@ -48,10 +48,7 @@ export async function GET(req: Request) {
     .filter((t) => t.type === "expense" && !INTERNAL_EXPENSE.includes(t.category))
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Circulating balance = ALL income - ALL expense (includes internal transfers)
-  const allIncome = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
-  const allExpense = transactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
-  const balance = allIncome - allExpense;
+  const balance = totalIncome - totalExpense;
 
   // Group by category (exclude internal transfers from charts)
   const expenseByCategory: Record<string, number> = {};
@@ -101,6 +98,19 @@ export async function GET(req: Request) {
   });
   const totalSavings = savingsAccounts.reduce((sum, a) => sum + a.balance, 0);
 
+  // Get investment summary
+  const investments = await prisma.investment.findMany({
+    where: { userId: result.userId },
+  });
+  const totalInvestment = investments.reduce((sum, i) => sum + i.currentValue, 0);
+  const totalInvestmentCost = investments.reduce((sum, i) => sum + i.costBasis, 0);
+
+  // Get physical assets summary
+  const physicalAssets = await prisma.physicalAsset.findMany({
+    where: { userId: result.userId },
+  });
+  const totalPhysicalAssets = physicalAssets.reduce((sum, a) => sum + a.currentValue, 0);
+
   // Cashback total (separate from income)
   const totalCashback = transactions
     .filter((t) => t.type === "income" && t.category === "cashback")
@@ -113,6 +123,9 @@ export async function GET(req: Request) {
     totalDebt,
     totalCashback,
     totalSavings,
+    totalInvestment,
+    totalInvestmentCost,
+    totalPhysicalAssets,
     totalLent,
     lendingByBorrower,
     expenseByCategory,

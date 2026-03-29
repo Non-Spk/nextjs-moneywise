@@ -20,6 +20,8 @@ model User {
   lendings     Lending[]
   categories   Category[]
   savingsAccounts SavingsAccount[]
+  investments  Investment[]
+  physicalAssets PhysicalAsset[]
 }
 
 model Transaction {
@@ -123,4 +125,46 @@ model SavingsTransaction {
   date             DateTime
   createdAt        DateTime       @default(now())
   savingsAccount   SavingsAccount @relation(fields: [savingsAccountId], references: [id], onDelete: Cascade)
+}
+
+model Investment {
+  id            String                @id @default(cuid())
+  userId        String
+  name          String                // ชื่อ เช่น "ทองคำแท่ง 1 บาท", "SCBSET", "BTC"
+  type          String                // "gold" | "stock" | "fund" | "crypto" | "bond" | "other"
+  costBasis     Float                 @default(0) // ต้นทุนรวม
+  currentValue  Float                 @default(0) // มูลค่าปัจจุบัน
+  units         Float                 @default(0) // จำนวนหน่วย
+  note          String                @default("")
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  InvestmentTransaction[]
+}
+
+model InvestmentTransaction {
+  id            String     @id @default(cuid())
+  investmentId  String
+  type          String     // "buy" | "sell" | "value_update"
+  amount        Float      // จำนวนเงิน
+  units         Float      @default(0) // จำนวนหน่วย
+  pricePerUnit  Float      @default(0)
+  note          String     @default("")
+  date          DateTime
+  createdAt     DateTime   @default(now())
+  investment    Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+}
+
+model PhysicalAsset {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String   // เช่น "ทองก้อน 5 บาท", "คอนโด", "รถยนต์"
+  type          String   // "gold" | "property" | "vehicle" | "collectible" | "other"
+  purchaseValue Float    @default(0)
+  currentValue  Float    @default(0)
+  purchaseDate  DateTime?
+  note          String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
