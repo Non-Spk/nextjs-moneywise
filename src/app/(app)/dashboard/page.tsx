@@ -13,6 +13,8 @@ interface DashboardData {
   totalExpense: number;
   balance: number;
   totalDebt: number;
+  totalLent: number;
+  lendingByBorrower: Record<string, number>;
   expenseByCategory: Record<string, number>;
   incomeByCategory: Record<string, number>;
   recentTransactions: {
@@ -65,6 +67,7 @@ export default function DashboardPage() {
     { label: "รายจ่าย", value: data?.totalExpense || 0, color: "var(--danger)" },
     { label: "คงเหลือ", value: data?.balance || 0, color: "var(--info)" },
     { label: "หนี้บัตรเครดิต", value: data?.totalDebt || 0, color: "var(--warning)" },
+    { label: "ให้ยืมค้าง", value: data?.totalLent || 0, color: "var(--warning)" },
   ];
 
   return (
@@ -77,7 +80,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           {stats.map((stat) => (
             <div key={stat.label} className="bg-[var(--card-bg)] rounded-xl p-5 shadow-[var(--shadow-card)] border border-[var(--card-border)] transition-colors">
               <p className="text-[12px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">{stat.label}</p>
@@ -98,6 +101,26 @@ export default function DashboardPage() {
             {renderCategoryBars(data?.incomeByCategory || {}, "var(--success)")}
           </div>
         </div>
+
+        {/* Lending by borrower */}
+        {data?.lendingByBorrower && Object.keys(data.lendingByBorrower).length > 0 && (
+          <div className="bg-[var(--card-bg)] rounded-xl p-5 shadow-[var(--shadow-card)] border border-[var(--card-border)] mb-6">
+            <h3 className="font-semibold text-[14px] mb-4 text-[var(--text-primary)]">ให้ยืมค้าง - แยกตามคน</h3>
+            <div className="space-y-2.5">
+              {Object.entries(data.lendingByBorrower).sort((a, b) => b[1] - a[1]).map(([name, amount]) => (
+                <div key={name} className="flex items-center justify-between py-2 border-b border-[var(--table-row-border)] last:border-b-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[var(--warning-bg)] flex items-center justify-center text-[12px] font-semibold text-[var(--warning-text)]">
+                      {name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-[13px] font-medium text-[var(--text-primary)]">{name}</span>
+                  </div>
+                  <span className="text-[14px] font-semibold text-[var(--warning)]">{formatCurrency(amount)} บาท</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Upcoming bills alert */}
         {data?.upcomingBills && data.upcomingBills.length > 0 && (

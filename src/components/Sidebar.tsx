@@ -9,6 +9,7 @@ import { useTheme } from "./ThemeProvider";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "grid" },
   { href: "/transactions", label: "รายรับ-รายจ่าย", icon: "arrows" },
+  { href: "/lendings", label: "ให้ยืม & ทวงหนี้", icon: "people" },
   { href: "/tax", label: "ภาษี & ลดหย่อน", icon: "doc" },
   { href: "/credit-cards", label: "บัตรเครดิต & หนี้สิน", icon: "card" },
   { href: "/bills", label: "บิล & การแจ้งเตือน", icon: "bell" },
@@ -51,6 +52,15 @@ function NavIcon({ type, isActive }: { type: string; isActive: boolean }) {
       return (
         <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M10 2a5 5 0 015 5c0 5 2 6 2 6H3s2-1 2-6a5 5 0 015-5zM8.5 17a1.5 1.5 0 003 0" />
+        </svg>
+      );
+    case "people":
+      return (
+        <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="7" cy="6" r="3" />
+          <path d="M2 17v-1a5 5 0 015-5h0" />
+          <circle cx="14" cy="7" r="2.5" />
+          <path d="M18 17v-1a4 4 0 00-4-4h0" />
         </svg>
       );
     default:

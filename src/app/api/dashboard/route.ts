@@ -67,11 +67,23 @@ export async function GET(req: Request) {
     return daysUntilDue <= 7;
   });
 
+  // Get lending summary
+  const lendings = await prisma.lending.findMany({
+    where: { userId: result.userId, isReturned: false },
+  });
+  const totalLent = lendings.reduce((sum, l) => sum + l.amount, 0);
+  const lendingByBorrower: Record<string, number> = {};
+  for (const l of lendings) {
+    lendingByBorrower[l.borrower] = (lendingByBorrower[l.borrower] || 0) + (l.amount - l.returnedAmount);
+  }
+
   return NextResponse.json({
     totalIncome,
     totalExpense,
     balance: totalIncome - totalExpense,
     totalDebt,
+    totalLent,
+    lendingByBorrower,
     expenseByCategory,
     incomeByCategory,
     recentTransactions: transactions.slice(0, 10),

@@ -17,31 +17,33 @@ model User {
   creditCards  CreditCard[]
   bills        Bill[]
   deductions   TaxDeduction[]
+  lendings     Lending[]
 }
 
 model Transaction {
-  id         String   @id @default(cuid())
-  userId     String
-  type       String   // "income" | "expense"
-  category   String   // e.g. "salary", "food", "utilities", "rent", "phone"
-  channel    String   // "cash" | "transfer" | "credit"
-  amount     Float
-  note       String   @default("")
-  date       DateTime
+  id           String   @id @default(cuid())
+  userId       String
+  type         String   // "income" | "expense"
+  category     String
+  channel      String   // "cash" | "transfer" | "credit"
+  amount       Float
+  note         String   @default("")
+  date         DateTime
   creditCardId String?
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  creditCard CreditCard? @relation(fields: [creditCardId], references: [id])
+  groupId      String?  // links related transactions (e.g. salary + tax + social security)
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditCard   CreditCard? @relation(fields: [creditCardId], references: [id])
 }
 
 model CreditCard {
   id           String        @id @default(cuid())
   userId       String
   bankName     String
-  cardNumber   String        // last 4 digits only
+  cardNumber   String
   creditLimit  Float
   balance      Float         @default(0)
-  dueDate      Int           // day of month (1-31)
+  dueDate      Int
   createdAt    DateTime      @default(now())
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
@@ -69,4 +71,18 @@ model TaxDeduction {
   taxYear   Int      @default(2568)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Lending {
+  id          String    @id @default(cuid())
+  userId      String
+  borrower    String    // ชื่อคนยืม
+  amount      Float     // จำนวนเงินที่ให้ยืม
+  description String    @default("")
+  date        DateTime
+  isReturned  Boolean   @default(false)
+  returnedAt  DateTime?
+  returnedAmount Float  @default(0)
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
