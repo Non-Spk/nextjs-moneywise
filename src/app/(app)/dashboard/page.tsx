@@ -31,15 +31,18 @@ interface DashboardData {
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [viewMode, setViewMode] = useState<"month" | "year">("month");
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
+  const [year, setYear] = useState(() => String(new Date().getFullYear()));
 
   const fetchData = useCallback(async () => {
-    const res = await fetch(`/api/dashboard?month=${month}`);
+    const params = viewMode === "year" ? `year=${year}` : `month=${month}`;
+    const res = await fetch(`/api/dashboard?${params}`);
     if (res.ok) setData(await res.json());
-  }, [month]);
+  }, [viewMode, month, year]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -74,9 +77,36 @@ export default function DashboardPage() {
     <>
       <Topbar title="Dashboard" />
       <div className="p-6 max-w-[1200px]">
-        <div className="mb-6">
-          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
-            className="px-3.5 py-2 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-[13px] focus:border-[var(--brand-red)] outline-none transition-colors" />
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex bg-[var(--bg-subtle)] rounded-lg p-1">
+            <button onClick={() => setViewMode("month")}
+              className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-all duration-200 ${
+                viewMode === "month"
+                  ? "bg-[var(--card-bg)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]"
+                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              }`}>
+              รายเดือน
+            </button>
+            <button onClick={() => setViewMode("year")}
+              className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-all duration-200 ${
+                viewMode === "year"
+                  ? "bg-[var(--card-bg)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]"
+                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              }`}>
+              รายปี
+            </button>
+          </div>
+          {viewMode === "month" ? (
+            <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
+              className="px-3.5 py-2 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-[13px] focus:border-[var(--brand-red)] outline-none transition-colors" />
+          ) : (
+            <select value={year} onChange={(e) => setYear(e.target.value)}
+              className="px-3.5 py-2 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-[13px] focus:border-[var(--brand-red)] outline-none transition-colors">
+              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Stats cards */}

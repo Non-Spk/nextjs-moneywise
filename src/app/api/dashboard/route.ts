@@ -9,10 +9,17 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month"); // "2026-03"
+  const year = searchParams.get("year");   // "2026"
 
-  // Build date filter
+  // Build date filter - year takes priority if both provided
   const dateFilter: Record<string, unknown> = {};
-  if (month) {
+  if (year) {
+    const y = parseInt(year);
+    dateFilter.date = {
+      gte: new Date(y, 0, 1),
+      lt: new Date(y + 1, 0, 1),
+    };
+  } else if (month) {
     const [y, m] = month.split("-").map(Number);
     dateFilter.date = {
       gte: new Date(y, m - 1, 1),
