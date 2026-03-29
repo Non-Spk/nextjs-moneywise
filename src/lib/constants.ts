@@ -16,6 +16,7 @@ export const EXPENSE_CATEGORIES = [
   { value: "social_security_expense", label: "ประกันสังคม (หัก)" },
   { value: "provident_fund_expense", label: "กองทุนสำรองเลี้ยงชีพ (หัก)" },
   { value: "credit_card_payment", label: "ชำระหนี้บัตรเครดิต" },
+  { value: "savings_deposit", label: "ฝากเงินออม" },
   { value: "other_expense", label: "อื่นๆ" },
 ] as const;
 
@@ -25,6 +26,7 @@ export const INCOME_CATEGORIES = [
   { value: "bonus", label: "โบนัส" },
   { value: "investment_return", label: "ผลตอบแทนลงทุน" },
   { value: "cashback", label: "Cashback บัตรเครดิต" },
+  { value: "savings_withdraw", label: "ถอนเงินออม" },
   { value: "other_income", label: "อื่นๆ" },
 ] as const;
 

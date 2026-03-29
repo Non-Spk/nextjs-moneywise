@@ -14,6 +14,7 @@ interface DashboardData {
   balance: number;
   totalDebt: number;
   totalCashback: number;
+  totalSavings: number;
   totalLent: number;
   lendingByBorrower: Record<string, number>;
   expenseByCategory: Record<string, number>;
@@ -71,6 +72,7 @@ export default function DashboardPage() {
     { label: "รายจ่าย", value: data?.totalExpense || 0, color: "var(--danger)" },
     { label: "คงเหลือ", value: data?.balance || 0, color: "var(--info)" },
     { label: "หนี้บัตรเครดิต", value: data?.totalDebt || 0, color: "var(--warning)" },
+    { label: "เงินออม", value: data?.totalSavings || 0, color: "var(--success)" },
     { label: "Cashback", value: data?.totalCashback || 0, color: "var(--info)" },
     { label: "ให้ยืมค้าง", value: data?.totalLent || 0, color: "var(--warning)" },
   ];

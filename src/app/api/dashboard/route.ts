@@ -35,26 +35,31 @@ export async function GET(req: Request) {
     orderBy: { date: "desc" },
   });
 
-  // Categories that are internal transfers, not real income/expenses
-  const EXCLUDED_FROM_EXPENSE = ["credit_card_payment"];
-  const EXCLUDED_FROM_INCOME = ["cashback"];
+  // Internal transfer categories - not real income/expenses but affect cash flow
+  const INTERNAL_EXPENSE = ["credit_card_payment", "savings_deposit"];
+  const INTERNAL_INCOME = ["cashback", "savings_withdraw"];
 
-  // Calculate totals
+  // Real income/expense (for display cards)
   const totalIncome = transactions
-    .filter((t) => t.type === "income" && !EXCLUDED_FROM_INCOME.includes(t.category))
+    .filter((t) => t.type === "income" && !INTERNAL_INCOME.includes(t.category))
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalExpense = transactions
-    .filter((t) => t.type === "expense" && !EXCLUDED_FROM_EXPENSE.includes(t.category))
+    .filter((t) => t.type === "expense" && !INTERNAL_EXPENSE.includes(t.category))
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Group expenses by category
+  // Circulating balance = ALL income - ALL expense (includes internal transfers)
+  const allIncome = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
+  const allExpense = transactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
+  const balance = allIncome - allExpense;
+
+  // Group by category (exclude internal transfers from charts)
   const expenseByCategory: Record<string, number> = {};
   const incomeByCategory: Record<string, number> = {};
 
   for (const t of transactions) {
-    if (t.type === "expense" && EXCLUDED_FROM_EXPENSE.includes(t.category)) continue;
-    if (t.type === "income" && EXCLUDED_FROM_INCOME.includes(t.category)) continue;
+    if (t.type === "expense" && INTERNAL_EXPENSE.includes(t.category)) continue;
+    if (t.type === "income" && INTERNAL_INCOME.includes(t.category)) continue;
     const target = t.type === "expense" ? expenseByCategory : incomeByCategory;
     target[t.category] = (target[t.category] || 0) + t.amount;
   }
@@ -90,6 +95,12 @@ export async function GET(req: Request) {
     lendingByBorrower[l.borrower] = (lendingByBorrower[l.borrower] || 0) + (l.amount - l.returnedAmount);
   }
 
+  // Get savings summary
+  const savingsAccounts = await prisma.savingsAccount.findMany({
+    where: { userId: result.userId },
+  });
+  const totalSavings = savingsAccounts.reduce((sum, a) => sum + a.balance, 0);
+
   // Cashback total (separate from income)
   const totalCashback = transactions
     .filter((t) => t.type === "income" && t.category === "cashback")
@@ -98,9 +109,10 @@ export async function GET(req: Request) {
   return NextResponse.json({
     totalIncome,
     totalExpense,
-    balance: totalIncome - totalExpense,
+    balance,
     totalDebt,
     totalCashback,
+    totalSavings,
     totalLent,
     lendingByBorrower,
     expenseByCategory,

@@ -19,6 +19,7 @@ model User {
   deductions   TaxDeduction[]
   lendings     Lending[]
   categories   Category[]
+  savingsAccounts SavingsAccount[]
 }
 
 model Transaction {
@@ -98,4 +99,28 @@ model Category {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, type, value])
+}
+
+model SavingsAccount {
+  id           String              @id @default(cuid())
+  userId       String
+  name         String              // ชื่อบัญชี เช่น "ออมฉุกเฉิน", "เที่ยว"
+  bankName     String              // ธนาคาร
+  accountNumber String  @default("") // เลขบัญชี (optional)
+  balance      Float               @default(0)
+  goal         Float?              // เป้าหมาย (optional)
+  createdAt    DateTime            @default(now())
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions SavingsTransaction[]
+}
+
+model SavingsTransaction {
+  id               String         @id @default(cuid())
+  savingsAccountId String
+  type             String         // "deposit" | "withdraw"
+  amount           Float
+  note             String         @default("")
+  date             DateTime
+  createdAt        DateTime       @default(now())
+  savingsAccount   SavingsAccount @relation(fields: [savingsAccountId], references: [id], onDelete: Cascade)
 }
