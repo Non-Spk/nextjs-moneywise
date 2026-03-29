@@ -30,6 +30,12 @@ export default function CreditCardsPage() {
   const [payChannel, setPayChannel] = useState("transfer");
   const [payDate, setPayDate] = useState(new Date().toISOString().split("T")[0]);
 
+  // Cashback modal
+  const [showCashbackModal, setShowCashbackModal] = useState(false);
+  const [cbCard, setCbCard] = useState<CreditCard | null>(null);
+  const [cbAmount, setCbAmount] = useState("");
+  const [cbDate, setCbDate] = useState(new Date().toISOString().split("T")[0]);
+
   const fetchCards = useCallback(async () => {
     const res = await fetch("/api/credit-cards");
     if (res.ok) setCards(await res.json());
@@ -70,6 +76,24 @@ export default function CreditCardsPage() {
       body: JSON.stringify({ amount: payAmount, channel: payChannel, date: payDate }),
     });
     if (res.ok) { setShowPayModal(false); setPayCard(null); fetchCards(); }
+  }
+
+  function openCashbackModal(card: CreditCard) {
+    setCbCard(card);
+    setCbAmount("");
+    setCbDate(new Date().toISOString().split("T")[0]);
+    setShowCashbackModal(true);
+  }
+
+  async function handleCashback(e: React.FormEvent) {
+    e.preventDefault();
+    if (!cbCard) return;
+    const res = await fetch(`/api/credit-cards/${cbCard.id}/cashback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: cbAmount, date: cbDate }),
+    });
+    if (res.ok) { setShowCashbackModal(false); setCbCard(null); fetchCards(); }
   }
 
   function getUsagePercent(card: CreditCard) {
@@ -133,10 +157,16 @@ export default function CreditCardsPage() {
                   <p className="text-[11px] text-[var(--cc-text-muted)]">ครบกำหนดวันที่ {card.dueDate}</p>
                 </div>
                 {card.balance > 0 && (
-                  <button onClick={() => openPayModal(card)}
-                    className="mt-4 w-full py-2 bg-[var(--cc-bg-accent)] text-[var(--cc-text)] rounded-lg text-[12px] font-medium hover:bg-[var(--cc-divider)] transition-colors border border-[var(--cc-divider)]">
-                    ชำระหนี้
-                  </button>
+                  <div className="mt-4 flex gap-2">
+                    <button onClick={() => openPayModal(card)}
+                      className="flex-1 py-2 bg-[var(--cc-bg-accent)] text-[var(--cc-text)] rounded-lg text-[12px] font-medium hover:bg-[var(--cc-divider)] transition-colors border border-[var(--cc-divider)]">
+                      ชำระหนี้
+                    </button>
+                    <button onClick={() => openCashbackModal(card)}
+                      className="flex-1 py-2 bg-[var(--cc-bg-accent)] text-[var(--cc-text)] rounded-lg text-[12px] font-medium hover:bg-[var(--cc-divider)] transition-colors border border-[var(--cc-divider)]">
+                      Cashback
+                    </button>
+                  </div>
                 )}
               </div>
             );
@@ -172,10 +202,16 @@ export default function CreditCardsPage() {
                     <td className="px-5 py-3 text-center text-[var(--text-primary)]">วันที่ {card.dueDate}</td>
                     <td className="px-5 py-3 text-right">
                       {card.balance > 0 && (
-                        <button onClick={() => openPayModal(card)}
-                          className="px-2.5 py-1 bg-[var(--success-bg)] text-[var(--success-text)] rounded-md text-[11px] font-medium transition-colors">
-                          ชำระ
-                        </button>
+                        <div className="flex gap-1.5 justify-end">
+                          <button onClick={() => openPayModal(card)}
+                            className="px-2.5 py-1 bg-[var(--success-bg)] text-[var(--success-text)] rounded-md text-[11px] font-medium transition-colors">
+                            ชำระ
+                          </button>
+                          <button onClick={() => openCashbackModal(card)}
+                            className="px-2.5 py-1 bg-[var(--info-bg)] text-[var(--info-text)] rounded-md text-[11px] font-medium transition-colors">
+                            CB
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -272,6 +308,35 @@ export default function CreditCardsPage() {
                   className="px-4 py-2 border border-[var(--input-border)] text-[var(--text-primary)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">ยกเลิก</button>
                 <button type="submit"
                   className="px-4 py-2 bg-[var(--success)] text-white rounded-lg text-[13px] font-medium hover:bg-[var(--success)] transition-colors">ชำระเงิน</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showCashbackModal && cbCard && (
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowCashbackModal(false)}>
+          <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-[17px] font-semibold mb-1 text-[var(--text-primary)]">Cashback</h2>
+            <p className="text-[13px] text-[var(--text-secondary)] mb-5">{cbCard.bankName} *{cbCard.cardNumber} - ยอดค้าง {formatCurrency(cbCard.balance)} บาท</p>
+            <form onSubmit={handleCashback}>
+              <div className="mb-4">
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">จำนวน Cashback (บาท)</label>
+                <input type="number" value={cbAmount} onChange={(e) => setCbAmount(e.target.value)} required min="0.01" max={cbCard.balance} step="0.01" className={inputClass} />
+              </div>
+              <div className="mb-5">
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">วันที่ได้รับ</label>
+                <input type="date" value={cbDate} onChange={(e) => setCbDate(e.target.value)} required className={inputClass} />
+              </div>
+              {parseFloat(cbAmount) > 0 && (
+                <div className="bg-[var(--bg-subtle)] rounded-lg p-3 mb-5 text-[12px]">
+                  <p className="text-[var(--text-primary)]">ยอดค้างหลัง cashback: <span className="font-semibold">{formatCurrency(Math.max(cbCard.balance - parseFloat(cbAmount), 0))} บาท</span></p>
+                </div>
+              )}
+              <div className="flex gap-2.5 justify-end">
+                <button type="button" onClick={() => setShowCashbackModal(false)}
+                  className="px-4 py-2 border border-[var(--input-border)] text-[var(--text-primary)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">ยกเลิก</button>
+                <button type="submit"
+                  className="px-4 py-2 bg-[var(--info)] text-white rounded-lg text-[13px] font-medium transition-colors">บันทึก Cashback</button>
               </div>
             </form>
           </div>

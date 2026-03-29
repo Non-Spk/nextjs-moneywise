@@ -13,6 +13,7 @@ interface DashboardData {
   totalExpense: number;
   balance: number;
   totalDebt: number;
+  totalCashback: number;
   totalLent: number;
   lendingByBorrower: Record<string, number>;
   expenseByCategory: Record<string, number>;
@@ -70,6 +71,7 @@ export default function DashboardPage() {
     { label: "รายจ่าย", value: data?.totalExpense || 0, color: "var(--danger)" },
     { label: "คงเหลือ", value: data?.balance || 0, color: "var(--info)" },
     { label: "หนี้บัตรเครดิต", value: data?.totalDebt || 0, color: "var(--warning)" },
+    { label: "Cashback", value: data?.totalCashback || 0, color: "var(--info)" },
     { label: "ให้ยืมค้าง", value: data?.totalLent || 0, color: "var(--warning)" },
   ];
 
@@ -110,7 +112,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {stats.map((stat) => (
             <div key={stat.label} className="bg-[var(--card-bg)] rounded-xl p-5 shadow-[var(--shadow-card)] border border-[var(--card-border)] transition-colors">
               <p className="text-[12px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">{stat.label}</p>

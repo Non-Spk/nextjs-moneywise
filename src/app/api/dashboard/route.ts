@@ -35,12 +35,13 @@ export async function GET(req: Request) {
     orderBy: { date: "desc" },
   });
 
-  // Categories that are internal transfers, not real expenses
+  // Categories that are internal transfers, not real income/expenses
   const EXCLUDED_FROM_EXPENSE = ["credit_card_payment"];
+  const EXCLUDED_FROM_INCOME = ["cashback"];
 
   // Calculate totals
   const totalIncome = transactions
-    .filter((t) => t.type === "income")
+    .filter((t) => t.type === "income" && !EXCLUDED_FROM_INCOME.includes(t.category))
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalExpense = transactions
@@ -53,6 +54,7 @@ export async function GET(req: Request) {
 
   for (const t of transactions) {
     if (t.type === "expense" && EXCLUDED_FROM_EXPENSE.includes(t.category)) continue;
+    if (t.type === "income" && EXCLUDED_FROM_INCOME.includes(t.category)) continue;
     const target = t.type === "expense" ? expenseByCategory : incomeByCategory;
     target[t.category] = (target[t.category] || 0) + t.amount;
   }
@@ -88,11 +90,17 @@ export async function GET(req: Request) {
     lendingByBorrower[l.borrower] = (lendingByBorrower[l.borrower] || 0) + (l.amount - l.returnedAmount);
   }
 
+  // Cashback total (separate from income)
+  const totalCashback = transactions
+    .filter((t) => t.type === "income" && t.category === "cashback")
+    .reduce((sum, t) => sum + t.amount, 0);
+
   return NextResponse.json({
     totalIncome,
     totalExpense,
     balance: totalIncome - totalExpense,
     totalDebt,
+    totalCashback,
     totalLent,
     lendingByBorrower,
     expenseByCategory,

@@ -24,6 +24,7 @@ export const INCOME_CATEGORIES = [
   { value: "freelance", label: "ฟรีแลนซ์" },
   { value: "bonus", label: "โบนัส" },
   { value: "investment_return", label: "ผลตอบแทนลงทุน" },
+  { value: "cashback", label: "Cashback บัตรเครดิต" },
   { value: "other_income", label: "อื่นๆ" },
 ] as const;
 
