@@ -39,8 +39,8 @@ export default function Topbar({ title }: { title: string }) {
   }, [fetchBills]);
 
   return (
-    <div className="bg-white px-8 py-4 flex justify-between items-center shadow-[0_1px_0_rgba(0,0,0,0.1)] sticky top-0 z-40">
-      <h1 className="text-xl font-bold text-[var(--dark-text)]">{title}</h1>
+    <div className="bg-[var(--topbar-bg)] px-8 py-4 flex justify-between items-center shadow-[0_1px_0_rgba(0,0,0,0.1)] sticky top-0 z-40 transition-colors duration-300">
+      <h1 className="text-xl font-bold text-[var(--text-primary)]">{title}</h1>
 
       <div className="relative">
         <button
@@ -58,12 +58,12 @@ export default function Topbar({ title }: { title: string }) {
 
         {/* Notification dropdown */}
         {showNotif && (
-          <div className="absolute right-0 top-10 w-80 bg-white rounded-lg shadow-xl border border-gray-100 z-50">
-            <div className="px-4 py-3 border-b font-bold text-sm">
+          <div className="absolute right-0 top-10 w-80 bg-[var(--card-bg)] rounded-lg shadow-xl border border-[var(--card-border)] z-50 transition-colors">
+            <div className="px-4 py-3 border-b border-[var(--table-row-border)] font-bold text-sm text-[var(--text-primary)]">
               การแจ้งเตือน
             </div>
             {upcomingBills.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm text-[var(--body-text)]">
+              <div className="px-4 py-6 text-center text-sm text-[var(--text-secondary)]">
                 ไม่มีการแจ้งเตือน
               </div>
             ) : (
@@ -76,7 +76,7 @@ export default function Topbar({ title }: { title: string }) {
                 return (
                   <div
                     key={bill.id}
-                    className="px-4 py-3 border-b last:border-b-0"
+                    className="px-4 py-3 border-b border-[var(--table-row-border)] last:border-b-0"
                   >
                     <div className="flex items-center gap-2">
                       <span
@@ -84,11 +84,11 @@ export default function Topbar({ title }: { title: string }) {
                           daysUntil <= 2 ? "bg-[var(--danger)]" : "bg-[var(--warning)]"
                         }`}
                       />
-                      <span className="font-semibold text-sm">
+                      <span className="font-semibold text-sm text-[var(--text-primary)]">
                         {bill.name}
                       </span>
                     </div>
-                    <p className="text-xs text-[var(--body-text)] mt-1">
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">
                       ครบกำหนดวันที่ {bill.dueDay} (อีก {daysUntil} วัน) -{" "}
                       {bill.amount.toLocaleString()} บาท
                     </p>
