@@ -67,6 +67,9 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("simple");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const [filterType, setFilterType] = useState("");
   const [filterChannel, setFilterChannel] = useState("");
@@ -101,15 +104,23 @@ export default function TransactionsPage() {
   const [expDate, setExpDate] = useState(new Date().toISOString().split("T")[0]);
   const [expCreditCardId, setExpCreditCardId] = useState("");
 
-  const fetchTransactions = useCallback(async () => {
+  const fetchTransactions = useCallback(async (p = page) => {
     const params = new URLSearchParams();
     if (filterType) params.set("type", filterType);
     if (filterChannel) params.set("channel", filterChannel);
     if (filterCategory) params.set("category", filterCategory);
     if (filterMonth) params.set("month", filterMonth);
+    params.set("page", String(p));
+    params.set("limit", "50");
     const res = await fetch(`/api/transactions?${params}`);
-    if (res.ok) setTransactions(await res.json());
-  }, [filterType, filterChannel, filterCategory, filterMonth]);
+    if (res.ok) {
+      const json = await res.json();
+      setTransactions(json.data);
+      setTotal(json.total);
+      setTotalPages(json.totalPages);
+      setPage(json.page);
+    }
+  }, [filterType, filterChannel, filterCategory, filterMonth, page]);
 
   const fetchCreditCards = useCallback(async () => {
     const res = await fetch("/api/credit-cards");
@@ -128,6 +139,9 @@ export default function TransactionsPage() {
       setDefaults(d);
     }
   }, []);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [filterType, filterChannel, filterCategory, filterMonth]);
 
   useEffect(() => { fetchTransactions(); fetchCreditCards(); fetchCustomCategories(); fetchDefaults(); }, [fetchTransactions, fetchCreditCards, fetchCustomCategories, fetchDefaults]);
 
@@ -254,10 +268,10 @@ export default function TransactionsPage() {
   return (
     <>
       <Topbar title="รายรับ-รายจ่าย" />
-      <div className="p-6 max-w-[1200px]">
-        <div className="flex justify-between items-center mb-5">
+      <div className="p-4 sm:p-6 max-w-[1200px]">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
           <h2 className="font-semibold text-[15px] text-[var(--text-primary)]">บันทึกรายรับ-รายจ่าย</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button onClick={() => exportToExcel("transactions", { month: filterMonth, filterType, filterChannel, filterCategory })}
               className="px-4 py-2 bg-[var(--bg-subtle)] text-[var(--text-secondary)] border border-[var(--card-border)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">
               Export Excel
@@ -277,7 +291,7 @@ export default function TransactionsPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2.5 mb-5">
+        <div className="flex flex-wrap gap-2 sm:gap-2.5 mb-5">
           <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className={selectClass}>
             <option value="">ทั้งหมด</option><option value="income">รายรับ</option><option value="expense">รายจ่าย</option>
           </select>
@@ -293,7 +307,37 @@ export default function TransactionsPage() {
         </div>
 
         <div className="bg-[var(--card-bg)] rounded-xl shadow-[var(--shadow-card)] border border-[var(--card-border)] overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile card list */}
+          <div className="sm:hidden divide-y divide-[var(--table-row-border)]">
+            {transactions.map((tx) => (
+              <div key={tx.id} className={`px-4 py-3 ${tx.groupId ? "bg-[var(--bg-subtle)]" : ""}`}>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium text-[var(--text-primary)] truncate">
+                      {tx.note || getLabel(tx.category)}
+                      {tx.groupId && <span className="ml-1.5 inline-block px-1.5 py-0 rounded text-[9px] font-medium bg-[var(--info-bg)] text-[var(--info-text)]">กลุ่ม</span>}
+                    </p>
+                    <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                      {new Date(tx.date).toLocaleDateString("th-TH")} - {getLabel(tx.category)} - {getChannelLabel(tx.channel)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2 shrink-0">
+                    <p className={`text-[14px] font-semibold ${tx.type === "income" ? "text-[var(--success)]" : "text-[var(--danger)]"}`}>
+                      {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amount)}
+                    </p>
+                    <button onClick={() => handleDelete(tx.id)} className="text-[var(--text-tertiary)] hover:text-[var(--danger)] p-1" aria-label="ลบ">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {transactions.length === 0 && (
+              <div className="px-4 py-10 text-center text-[13px] text-[var(--text-tertiary)]">ยังไม่มีรายการ</div>
+            )}
+          </div>
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-[var(--table-header-bg)] border-b border-[var(--card-border)]">
@@ -336,11 +380,51 @@ export default function TransactionsPage() {
             </table>
           </div>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4 px-1">
+            <p className="text-[12px] text-[var(--text-tertiary)]">
+              แสดง {((page - 1) * 50) + 1}-{Math.min(page * 50, total)} จาก {total} รายการ
+            </p>
+            <div className="flex gap-1.5">
+              <button onClick={() => fetchTransactions(page - 1)} disabled={page <= 1}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-medium border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-secondary)] disabled:opacity-40 hover:bg-[var(--hover-bg)] transition-colors">
+                ก่อนหน้า
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                .reduce<(number | string)[]>((acc, p, i, arr) => {
+                  if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, i) =>
+                  typeof p === "string" ? (
+                    <span key={`dot-${i}`} className="px-2 py-1.5 text-[12px] text-[var(--text-tertiary)]">...</span>
+                  ) : (
+                    <button key={p} onClick={() => fetchTransactions(p)}
+                      className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-colors ${
+                        p === page
+                          ? "bg-[var(--brand-red)] text-white border-[var(--brand-red)]"
+                          : "border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]"
+                      }`}>
+                      {p}
+                    </button>
+                  )
+                )}
+              <button onClick={() => fetchTransactions(page + 1)} disabled={page >= totalPages}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-medium border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-secondary)] disabled:opacity-40 hover:bg-[var(--hover-bg)] transition-colors">
+                ถัดไป
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200] p-4" onClick={() => setShowModal(false)}>
           <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
 
             {/* Mode tabs */}

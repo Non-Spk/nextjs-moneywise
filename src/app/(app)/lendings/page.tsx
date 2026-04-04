@@ -26,11 +26,21 @@ export default function LendingsPage() {
   const [formDesc, setFormDesc] = useState("");
   const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
 
-  const fetchLendings = useCallback(async () => {
-    const res = await fetch("/api/lendings");
-    if (res.ok) setLendings(await res.json());
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const fetchLendings = useCallback(async (p = page) => {
+    const res = await fetch(`/api/lendings?page=${p}&limit=50`);
+    if (res.ok) {
+      const json = await res.json();
+      setLendings(json.data);
+      setTotal(json.total);
+      setTotalPages(json.totalPages);
+      setPage(json.page);
+    }
     setLoading(false);
-  }, []);
+  }, [page]);
 
   useEffect(() => { fetchLendings(); }, [fetchLendings]);
 
@@ -81,8 +91,8 @@ export default function LendingsPage() {
   return (
     <>
       <Topbar title="ให้ยืม & ทวงหนี้" />
-      <div className="p-6 max-w-[1200px]">
-        <div className="flex justify-between items-center mb-5">
+      <div className="p-4 sm:p-6 max-w-[1200px]">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
           <h2 className="font-semibold text-[15px] text-[var(--text-primary)]">ให้ยืม & ทวงหนี้</h2>
           <button onClick={() => setShowModal(true)}
             className="px-4 py-2 bg-[var(--brand-red)] text-white rounded-lg text-[13px] font-medium hover:bg-[var(--brand-red-hover)] transition-colors">
@@ -132,9 +142,42 @@ export default function LendingsPage() {
           </div>
         )}
 
-        {/* All lendings table */}
+        {/* All lendings */}
         <div className="bg-[var(--card-bg)] rounded-xl shadow-[var(--shadow-card)] border border-[var(--card-border)] overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile card list */}
+          <div className="sm:hidden divide-y divide-[var(--table-row-border)]">
+            {lendings.map((l) => (
+              <div key={l.id} className="px-4 py-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium text-[var(--text-primary)]">{l.borrower}</p>
+                    <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{new Date(l.date).toLocaleDateString("th-TH")} - {l.description || "-"}</p>
+                  </div>
+                  <div className="ml-2 shrink-0 text-right">
+                    <p className="text-[14px] font-semibold text-[var(--warning)]">{formatCurrency(l.amount)}</p>
+                    {l.isReturned
+                      ? <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--success-bg)] text-[var(--success-text)]">คืนแล้ว</span>
+                      : <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--danger-bg)] text-[var(--danger-text)]">ยังไม่คืน</span>
+                    }
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => handleToggleReturn(l)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium ${l.isReturned ? "bg-[var(--badge-muted-bg)] text-[var(--badge-muted-text)]" : "bg-[var(--success-bg)] text-[var(--success-text)]"}`}>
+                    {l.isReturned ? "ยกเลิก" : "คืนแล้ว"}
+                  </button>
+                  <button onClick={() => handleDelete(l.id)} className="text-[var(--text-tertiary)] hover:text-[var(--danger)] p-1" aria-label="ลบ">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+            {lendings.length === 0 && (
+              <div className="px-4 py-10 text-center text-[13px] text-[var(--text-tertiary)]">ยังไม่มีรายการให้ยืม</div>
+            )}
+          </div>
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-[var(--table-header-bg)] border-b border-[var(--card-border)]">
@@ -183,11 +226,51 @@ export default function LendingsPage() {
             </table>
           </div>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4 px-1">
+            <p className="text-[12px] text-[var(--text-tertiary)]">
+              แสดง {((page - 1) * 50) + 1}-{Math.min(page * 50, total)} จาก {total} รายการ
+            </p>
+            <div className="flex gap-1.5">
+              <button onClick={() => fetchLendings(page - 1)} disabled={page <= 1}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-medium border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-secondary)] disabled:opacity-40 hover:bg-[var(--hover-bg)] transition-colors">
+                ก่อนหน้า
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                .reduce<(number | string)[]>((acc, p, i, arr) => {
+                  if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, i) =>
+                  typeof p === "string" ? (
+                    <span key={`dot-${i}`} className="px-2 py-1.5 text-[12px] text-[var(--text-tertiary)]">...</span>
+                  ) : (
+                    <button key={p} onClick={() => fetchLendings(p)}
+                      className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-colors ${
+                        p === page
+                          ? "bg-[var(--brand-red)] text-white border-[var(--brand-red)]"
+                          : "border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]"
+                      }`}>
+                      {p}
+                    </button>
+                  )
+                )}
+              <button onClick={() => fetchLendings(page + 1)} disabled={page >= totalPages}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-medium border border-[var(--card-border)] bg-[var(--card-bg)] text-[var(--text-secondary)] disabled:opacity-40 hover:bg-[var(--hover-bg)] transition-colors">
+                ถัดไป
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowModal(false)}>
-          <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200] p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-[var(--modal-bg)] rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-[17px] font-semibold mb-5 text-[var(--text-primary)]">บันทึกการให้ยืม</h2>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">

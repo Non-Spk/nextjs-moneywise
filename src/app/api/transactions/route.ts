@@ -11,6 +11,9 @@ export async function GET(req: Request) {
   const channel = searchParams.get("channel");
   const category = searchParams.get("category");
   const month = searchParams.get("month");
+  const page = parseInt(searchParams.get("page") || "1");
+  const limit = parseInt(searchParams.get("limit") || "50");
+  const skip = (page - 1) * limit;
 
   const where: Record<string, unknown> = { userId: result.userId };
   if (type) where.type = type;
@@ -21,13 +24,24 @@ export async function GET(req: Request) {
     where.date = { gte: new Date(y, m - 1, 1), lt: new Date(y, m, 1) };
   }
 
-  const transactions = await prisma.transaction.findMany({
-    where,
-    orderBy: { date: "desc" },
-    include: { creditCard: { select: { bankName: true, cardNumber: true } } },
-  });
+  const [transactions, total] = await Promise.all([
+    prisma.transaction.findMany({
+      where,
+      orderBy: { date: "desc" },
+      include: { creditCard: { select: { bankName: true, cardNumber: true } } },
+      skip,
+      take: limit,
+    }),
+    prisma.transaction.count({ where }),
+  ]);
 
-  return NextResponse.json(transactions);
+  return NextResponse.json({
+    data: transactions,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  });
 }
 
 export async function POST(req: Request) {

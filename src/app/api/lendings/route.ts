@@ -2,16 +2,34 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUserId } from "@/lib/api-helpers";
 
-export async function GET() {
+export async function GET(req: Request) {
   const result = await getAuthUserId();
   if ("error" in result) return result.error;
 
-  const lendings = await prisma.lending.findMany({
-    where: { userId: result.userId },
-    orderBy: { date: "desc" },
-  });
+  const { searchParams } = new URL(req.url);
+  const page = parseInt(searchParams.get("page") || "1");
+  const limit = parseInt(searchParams.get("limit") || "50");
+  const skip = (page - 1) * limit;
 
-  return NextResponse.json(lendings);
+  const where = { userId: result.userId };
+
+  const [lendings, total] = await Promise.all([
+    prisma.lending.findMany({
+      where,
+      orderBy: { date: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.lending.count({ where }),
+  ]);
+
+  return NextResponse.json({
+    data: lendings,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  });
 }
 
 export async function POST(req: Request) {
