@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [tab, setTab] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,7 +34,7 @@ export default function LoginPage() {
       setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
       return;
     }
-    router.push("/dashboard");
+    router.push(callbackUrl);
   }
 
   async function handleRegister(e: React.FormEvent) {
@@ -64,7 +66,7 @@ export default function LoginPage() {
       setTab("login");
       return;
     }
-    router.push("/dashboard");
+    router.push(callbackUrl);
   }
 
   const inputClass =
@@ -144,12 +146,12 @@ export default function LoginPage() {
             <div className="mb-4">
               <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">รหัสผ่าน</label>
               <input type="password" value={regPassword} onChange={(e) => setRegPassword(e.target.value)}
-                className={inputClass} placeholder="อย่างน้อย 6 ตัวอักษร" required minLength={6} />
+                className={inputClass} placeholder="อย่างน้อย 8 ตัวอักษร" required minLength={8} maxLength={128} />
             </div>
             <div className="mb-6">
               <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">ยืนยันรหัสผ่าน</label>
               <input type="password" value={regConfirm} onChange={(e) => setRegConfirm(e.target.value)}
-                className={inputClass} required minLength={6} />
+                className={inputClass} required minLength={8} maxLength={128} />
             </div>
             <button type="submit" disabled={loading}
               className="w-full py-2.5 bg-[var(--brand-red)] text-white rounded-lg font-medium text-[14px] hover:bg-[var(--brand-red-hover)] transition-colors duration-150 disabled:opacity-50">
@@ -159,5 +161,13 @@ export default function LoginPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
