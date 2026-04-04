@@ -20,7 +20,7 @@ export default async function AppLayout({
       <ThemeProvider>
         <div className="flex min-h-screen bg-[var(--page-bg)]">
           <Sidebar />
-          <main className="ml-[240px] flex-1 min-h-screen">{children}</main>
+          <main className="flex-1 min-h-screen lg:ml-[240px] overflow-x-hidden">{children}</main>
         </div>
       </ThemeProvider>
     </SessionProvider>

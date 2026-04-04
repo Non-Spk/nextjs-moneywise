@@ -48,8 +48,8 @@ export default function Topbar({ title }: { title: string }) {
   }, [showNotif]);
 
   return (
-    <div className="bg-[var(--topbar-bg)] backdrop-blur-xl px-8 py-4 flex justify-between items-center border-b border-[var(--topbar-border)] sticky top-0 z-40 transition-colors duration-300">
-      <h1 className="text-[17px] font-semibold text-[var(--text-primary)] tracking-tight">{title}</h1>
+    <div className="bg-[var(--topbar-bg)] backdrop-blur-xl px-4 sm:px-8 py-4 flex justify-between items-center border-b border-[var(--topbar-border)] sticky top-0 z-40 transition-colors duration-300">
+      <h1 className="text-[15px] sm:text-[17px] font-semibold text-[var(--text-primary)] tracking-tight pl-10 lg:pl-0">{title}</h1>
 
       <div className="relative" ref={dropdownRef}>
         <button
@@ -68,7 +68,7 @@ export default function Topbar({ title }: { title: string }) {
         </button>
 
         {showNotif && (
-          <div className="absolute right-0 top-12 w-80 bg-[var(--card-bg)] rounded-xl shadow-[var(--shadow-lg)] border border-[var(--card-border)] z-50 overflow-hidden">
+          <div className="absolute right-0 sm:right-0 top-12 w-[calc(100vw-2rem)] sm:w-80 bg-[var(--card-bg)] rounded-xl shadow-[var(--shadow-lg)] border border-[var(--card-border)] z-50 overflow-hidden">
             <div className="px-4 py-3 border-b border-[var(--table-row-border)]">
               <p className="font-semibold text-[13px] text-[var(--text-primary)]">การแจ้งเตือน</p>
             </div>
