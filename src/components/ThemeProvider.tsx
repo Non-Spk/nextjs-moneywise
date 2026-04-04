@@ -7,7 +7,9 @@ type Theme = "light" | "dark";
 const ThemeContext = createContext<{
   theme: Theme;
   toggleTheme: () => void;
-}>({ theme: "light", toggleTheme: () => {} });
+  privacyMode: boolean;
+  togglePrivacy: () => void;
+}>({ theme: "light", toggleTheme: () => {}, privacyMode: false, togglePrivacy: () => {} });
 
 export function useTheme() {
   return useContext(ThemeContext);
@@ -19,6 +21,7 @@ export default function ThemeProvider({
   children: React.ReactNode;
 }) {
   const [theme, setTheme] = useState<Theme>("light");
+  const [privacyMode, setPrivacyMode] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("theme") as Theme | null;
@@ -26,6 +29,8 @@ export default function ThemeProvider({
       setTheme(saved);
       document.documentElement.setAttribute("data-theme", saved);
     }
+    const savedPrivacy = localStorage.getItem("privacyMode");
+    if (savedPrivacy === "true") setPrivacyMode(true);
   }, []);
 
   const toggleTheme = () => {
@@ -35,8 +40,14 @@ export default function ThemeProvider({
     document.documentElement.setAttribute("data-theme", next);
   };
 
+  const togglePrivacy = () => {
+    const next = !privacyMode;
+    setPrivacyMode(next);
+    localStorage.setItem("privacyMode", String(next));
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, privacyMode, togglePrivacy }}>
       {children}
     </ThemeContext.Provider>
   );

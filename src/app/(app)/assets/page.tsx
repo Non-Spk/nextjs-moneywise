@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
-import { formatCurrency, getInvestmentTypeLabel, getPhysicalAssetTypeLabel, PHYSICAL_ASSET_TYPES } from "@/lib/constants";
+import { getInvestmentTypeLabel, getPhysicalAssetTypeLabel, PHYSICAL_ASSET_TYPES } from "@/lib/constants";
+import { useAmount } from "@/lib/useAmount";
 
 interface SavingsAccount { id: string; name: string; bankName: string; balance: number; goal: number | null; }
 interface Investment { id: string; name: string; type: string; currency: string; currentRate: number; costBasis: number; currentValue: number; units: number; }
 interface PhysicalAsset { id: string; name: string; type: string; purchaseValue: number; currentValue: number; note: string; }
 
 export default function AssetsPage() {
+  const formatCurrency = useAmount();
   const [savings, setSavings] = useState<SavingsAccount[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [physicalAssets, setPhysicalAssets] = useState<PhysicalAsset[]>([]);

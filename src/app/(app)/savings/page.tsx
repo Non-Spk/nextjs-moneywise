@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
-import { formatCurrency } from "@/lib/constants";
+import { useAmount } from "@/lib/useAmount";
 
 interface SavingsTransaction {
   id: string;
@@ -23,6 +23,7 @@ interface SavingsAccount {
 }
 
 export default function SavingsPage() {
+  const formatCurrency = useAmount();
   const [accounts, setAccounts] = useState<SavingsAccount[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTxModal, setShowTxModal] = useState(false);

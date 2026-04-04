@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
 import {
   TAX_DEDUCTION_CATEGORIES,
-  formatCurrency,
   calculateTax,
 } from "@/lib/constants";
+import { useAmount } from "@/lib/useAmount";
 import { exportToExcel } from "@/lib/export";
 
 interface TaxDeduction {
@@ -18,6 +18,7 @@ interface TaxDeduction {
 }
 
 export default function TaxPage() {
+  const formatCurrency = useAmount();
   const [deductions, setDeductions] = useState<TaxDeduction[]>([]);
   const [totalIncome, setTotalIncome] = useState(0);
   const [showModal, setShowModal] = useState(false);

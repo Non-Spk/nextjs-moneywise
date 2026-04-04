@@ -7,10 +7,11 @@ import {
   INCOME_CATEGORIES,
   CHANNELS,
   ALL_CATEGORIES,
-  formatCurrency,
+  formatCurrency as rawFormatCurrency,
   getCategoryLabel,
   getChannelLabel,
 } from "@/lib/constants";
+import { useAmount } from "@/lib/useAmount";
 import { exportToExcel } from "@/lib/export";
 
 interface Transaction {
@@ -57,6 +58,7 @@ const FALLBACK_DEFAULTS: SmartDefaults = {
 };
 
 export default function TransactionsPage() {
+  const formatCurrency = useAmount();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
@@ -191,7 +193,7 @@ export default function TransactionsPage() {
       body: JSON.stringify({
         type: "expense", category: expCategory, channel: expChannel,
         amount: actual,
-        note: paid > actual ? `${expNote || ""} (จ่าย ${formatCurrency(paid)}, ทอน ${formatCurrency(paid - actual)})`.trim() : (expNote || ""),
+        note: paid > actual ? `${expNote || ""} (จ่าย ${rawFormatCurrency(paid)}, ทอน ${rawFormatCurrency(paid - actual)})`.trim() : (expNote || ""),
         date: expDate,
         creditCardId: expChannel === "credit" ? expCreditCardId : null,
       }),

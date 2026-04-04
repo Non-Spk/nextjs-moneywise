@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
-import { formatCurrency } from "@/lib/constants";
+import { useAmount } from "@/lib/useAmount";
 import { exportToExcel } from "@/lib/export";
 
 interface Bill {
@@ -15,6 +15,7 @@ interface Bill {
 }
 
 export default function BillsPage() {
+  const formatCurrency = useAmount();
   const [bills, setBills] = useState<Bill[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [formName, setFormName] = useState("");

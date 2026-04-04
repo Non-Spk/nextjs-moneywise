@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
-import { formatCurrency } from "@/lib/constants";
+import { useAmount } from "@/lib/useAmount";
 
 interface Lending {
   id: string;
@@ -16,6 +16,7 @@ interface Lending {
 }
 
 export default function LendingsPage() {
+  const formatCurrency = useAmount();
   const [lendings, setLendings] = useState<Lending[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [formBorrower, setFormBorrower] = useState("");

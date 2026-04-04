@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { formatCurrency } from "@/lib/constants";
+import { useAmount } from "@/lib/useAmount";
 
 interface Bill {
   id: string;
@@ -12,6 +12,7 @@ interface Bill {
 }
 
 export default function Topbar({ title }: { title: string }) {
+  const formatCurrency = useAmount();
   const [showNotif, setShowNotif] = useState(false);
   const [upcomingBills, setUpcomingBills] = useState<Bill[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);

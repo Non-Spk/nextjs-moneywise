@@ -105,7 +105,7 @@ function NavIcon({ type, isActive }: { type: string; isActive: boolean }) {
 export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, privacyMode, togglePrivacy } = useTheme();
 
   return (
     <aside className="w-[240px] bg-[var(--sidebar-bg)] fixed top-0 left-0 bottom-0 overflow-y-auto z-50 flex flex-col">
@@ -181,6 +181,30 @@ export default function Sidebar() {
               className="absolute top-[2px] left-[2px] w-[18px] h-[18px] bg-white rounded-full shadow-sm transition-transform duration-200"
               style={{
                 transform: theme === "dark" ? "translateX(18px)" : "translateX(0)",
+              }}
+            />
+          </button>
+        </div>
+
+        {/* Privacy toggle */}
+        <div className="flex items-center justify-between px-3 py-2">
+          <span className="text-[12px] text-[var(--sidebar-text-muted)]">
+            {privacyMode ? "ซ่อนยอด" : "แสดงยอด"}
+          </span>
+          <button
+            onClick={togglePrivacy}
+            className="relative w-10 h-[22px] rounded-full transition-colors duration-200 cursor-pointer focus:outline-none"
+            style={{
+              backgroundColor: privacyMode ? "var(--brand-red)" : "#636366",
+            }}
+            aria-label={`${privacyMode ? "แสดง" : "ซ่อน"}ยอดเงิน`}
+            role="switch"
+            aria-checked={privacyMode}
+          >
+            <span
+              className="absolute top-[2px] left-[2px] w-[18px] h-[18px] bg-white rounded-full shadow-sm transition-transform duration-200"
+              style={{
+                transform: privacyMode ? "translateX(18px)" : "translateX(0)",
               }}
             />
           </button>

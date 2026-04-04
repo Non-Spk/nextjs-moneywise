@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
 import {
-  formatCurrency,
   getCategoryLabel,
   getChannelLabel,
 } from "@/lib/constants";
+import { useAmount } from "@/lib/useAmount";
 
 interface DashboardData {
   totalIncome: number;
@@ -35,6 +35,7 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
+  const formatCurrency = useAmount();
   const [data, setData] = useState<DashboardData | null>(null);
   const [viewMode, setViewMode] = useState<"month" | "year">("month");
   const [month, setMonth] = useState(() => {

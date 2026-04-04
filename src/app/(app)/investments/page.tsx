@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
-import { formatCurrency, INVESTMENT_TYPES, CURRENCIES, getInvestmentTypeLabel } from "@/lib/constants";
+import { INVESTMENT_TYPES, CURRENCIES, getInvestmentTypeLabel } from "@/lib/constants";
+import { useAmount } from "@/lib/useAmount";
 
 interface InvestmentTx { id: string; type: string; amount: number; units: number; pricePerUnit: number; note: string; date: string; }
 interface Investment { id: string; name: string; type: string; currency: string; currentRate: number; costBasis: number; currentValue: number; units: number; note: string; transactions: InvestmentTx[]; }
@@ -10,6 +11,7 @@ interface Investment { id: string; name: string; type: string; currency: string;
 type TxMode = "buy" | "sell" | "value_update";
 
 export default function InvestmentsPage() {
+  const formatCurrency = useAmount();
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTxModal, setShowTxModal] = useState(false);
