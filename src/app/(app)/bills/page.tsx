@@ -85,10 +85,10 @@ export default function BillsPage() {
   return (
     <>
       <Topbar title="บิล & การแจ้งเตือน" />
-      <div className="p-6 max-w-[1200px]">
-        <div className="flex justify-between items-center mb-5">
+      <div className="p-4 sm:p-6 max-w-[1200px]">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
           <h2 className="font-semibold text-[15px] text-[var(--text-primary)]">บิลประจำ & การแจ้งเตือน</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button onClick={() => exportToExcel("bills")}
               className="px-4 py-2 bg-[var(--bg-subtle)] text-[var(--text-secondary)] border border-[var(--card-border)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">Export Excel</button>
             <button onClick={() => setShowModal(true)}
@@ -108,7 +108,36 @@ export default function BillsPage() {
         )}
 
         <div className="bg-[var(--card-bg)] rounded-xl shadow-[var(--shadow-card)] border border-[var(--card-border)] overflow-hidden transition-colors">
-          <div className="overflow-x-auto">
+          {/* Mobile card list */}
+          <div className="sm:hidden divide-y divide-[var(--table-row-border)]">
+            {bills.map((bill) => (
+              <div key={bill.id} className="px-4 py-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium text-[var(--text-primary)]">{bill.name}</p>
+                    <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">วันที่ {bill.dueDay} - {formatCurrency(bill.amount)} บาท</p>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2 shrink-0">
+                    {getStatusBadge(bill)}
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => handleTogglePaid(bill)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                      bill.isPaid ? "bg-[var(--badge-muted-bg)] text-[var(--badge-muted-text)]" : "bg-[var(--success-bg)] text-[var(--success-text)]"
+                    }`}>{bill.isPaid ? "ยกเลิก" : "ชำระแล้ว"}</button>
+                  <button onClick={() => handleDelete(bill.id)} className="text-[var(--text-tertiary)] hover:text-[var(--danger)] p-1" aria-label="ลบ">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+            {bills.length === 0 && (
+              <div className="px-4 py-10 text-center text-[13px] text-[var(--text-tertiary)]">ยังไม่มีบิลประจำ</div>
+            )}
+          </div>
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-[var(--table-header-bg)] border-b border-[var(--card-border)]">
@@ -153,8 +182,8 @@ export default function BillsPage() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowModal(false)}>
-          <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200] p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-[var(--modal-bg)] rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-[17px] font-semibold mb-5 text-[var(--text-primary)]">เพิ่มบิลประจำ</h2>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">

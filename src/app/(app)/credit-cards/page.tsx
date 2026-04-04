@@ -120,10 +120,10 @@ export default function CreditCardsPage() {
   return (
     <>
       <Topbar title="บัตรเครดิต & หนี้สิน" />
-      <div className="p-6 max-w-[1200px]">
-        <div className="flex justify-between items-center mb-5">
+      <div className="p-4 sm:p-6 max-w-[1200px]">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
           <h2 className="font-semibold text-[15px] text-[var(--text-primary)]">บัตรเครดิต & หนี้สิน</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button onClick={() => exportToExcel("credit-cards")}
               className="px-4 py-2 bg-[var(--bg-subtle)] text-[var(--text-secondary)] border border-[var(--card-border)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">Export Excel</button>
             <button onClick={() => setShowModal(true)}
@@ -131,7 +131,7 @@ export default function CreditCardsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
           {cards.map((card) => {
             const usage = getUsagePercent(card);
             const usageColor = getUsageColor(usage);
@@ -186,7 +186,37 @@ export default function CreditCardsPage() {
           <div className="px-5 py-4">
             <h3 className="font-semibold text-[14px] text-[var(--text-primary)]">สรุปหนี้สินทั้งหมด</h3>
           </div>
-          <div className="overflow-x-auto">
+          {/* Mobile card list */}
+          <div className="sm:hidden divide-y divide-[var(--table-row-border)]">
+            {cards.map((card) => (
+              <div key={card.id} className="px-4 py-3">
+                <div className="flex justify-between items-start">
+                  <p className="text-[13px] font-medium text-[var(--text-primary)]">{card.bankName} *{card.cardNumber}</p>
+                  <p className="text-[14px] font-semibold text-[var(--danger)]">{formatCurrency(card.balance)}</p>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <p className="text-[11px] text-[var(--text-secondary)]">วงเงิน {formatCurrency(card.creditLimit)} - วันที่ {card.dueDate}</p>
+                  <p className="text-[11px] text-[var(--success)]">เหลือ {formatCurrency(card.creditLimit - card.balance)}</p>
+                </div>
+                {card.balance > 0 && (
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={() => openPayModal(card)} className="px-2.5 py-1 bg-[var(--success-bg)] text-[var(--success-text)] rounded-md text-[11px] font-medium">ชำระ</button>
+                    <button onClick={() => openCashbackModal(card)} className="px-2.5 py-1 bg-[var(--info-bg)] text-[var(--info-text)] rounded-md text-[11px] font-medium">CB</button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {cards.length > 0 && (
+              <div className="px-4 py-3 bg-[var(--table-header-bg)]">
+                <div className="flex justify-between">
+                  <p className="text-[13px] font-semibold text-[var(--text-primary)]">รวม</p>
+                  <p className="text-[14px] font-semibold text-[var(--danger)]">{formatCurrency(totalDebt)}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-[var(--table-header-bg)] border-y border-[var(--card-border)]">
@@ -239,8 +269,8 @@ export default function CreditCardsPage() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowModal(false)}>
-          <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200] p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-[var(--modal-bg)] rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-[17px] font-semibold mb-5 text-[var(--text-primary)]">เพิ่มบัตรเครดิต</h2>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
@@ -274,8 +304,8 @@ export default function CreditCardsPage() {
         </div>
       )}
       {showPayModal && payCard && (
-        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowPayModal(false)}>
-          <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200] p-4" onClick={() => setShowPayModal(false)}>
+          <div className="bg-[var(--modal-bg)] rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-[17px] font-semibold mb-1 text-[var(--text-primary)]">ชำระหนี้บัตรเครดิต</h2>
             <p className="text-[13px] text-[var(--text-secondary)] mb-5">{payCard.bankName} *{payCard.cardNumber} - ยอดค้าง {formatCurrency(payCard.balance)} บาท</p>
             <form onSubmit={handlePay}>
@@ -320,8 +350,8 @@ export default function CreditCardsPage() {
         </div>
       )}
       {showCashbackModal && cbCard && (
-        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowCashbackModal(false)}>
-          <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200] p-4" onClick={() => setShowCashbackModal(false)}>
+          <div className="bg-[var(--modal-bg)] rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-[17px] font-semibold mb-1 text-[var(--text-primary)]">Cashback</h2>
             <p className="text-[13px] text-[var(--text-secondary)] mb-5">{cbCard.bankName} *{cbCard.cardNumber} - ยอดค้าง {formatCurrency(cbCard.balance)} บาท</p>
             <form onSubmit={handleCashback}>

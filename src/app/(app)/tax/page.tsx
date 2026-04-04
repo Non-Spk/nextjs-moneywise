@@ -85,7 +85,7 @@ export default function TaxPage() {
   return (
     <>
       <Topbar title="ภาษี & ลดหย่อน" />
-      <div className="p-6 max-w-[1200px]">
+      <div className="p-4 sm:p-6 max-w-[1200px]">
         {/* Tax summary */}
         <div className="bg-[var(--card-bg)] rounded-xl p-5 shadow-[var(--shadow-card)] border border-[var(--card-border)] mb-6 transition-colors">
           <div className="flex justify-between items-center mb-5">
@@ -160,12 +160,12 @@ export default function TaxPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-[var(--table-header-bg)] border-y border-[var(--card-border)]">
-                  <th className="px-5 py-2.5 text-left text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">เงินได้สุทธิ (บาท)</th>
-                  <th className="px-5 py-2.5 text-left text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">อัตราภาษี</th>
-                  <th className="px-5 py-2.5 text-right text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">ภาษีสูงสุดในขั้น</th>
+                  <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">เงินได้สุทธิ</th>
+                  <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">อัตรา</th>
+                  <th className="px-3 sm:px-5 py-2.5 text-right text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">ภาษีสูงสุด</th>
                 </tr>
               </thead>
-              <tbody className="text-[13px]">
+              <tbody className="text-[12px] sm:text-[13px]">
                 {[
                   ["0 - 150,000", "ยกเว้น", "0"],
                   ["150,001 - 300,000", "5%", "7,500"],
@@ -177,9 +177,9 @@ export default function TaxPage() {
                   ["5,000,001 ขึ้นไป", "35%", "-"],
                 ].map(([range, rate, maxTax], i) => (
                   <tr key={i} className="border-b border-[var(--table-row-border)] last:border-b-0">
-                    <td className="px-5 py-2.5 text-[var(--text-primary)]">{range}</td>
-                    <td className="px-5 py-2.5 text-[var(--text-primary)]">{rate}</td>
-                    <td className="px-5 py-2.5 text-right text-[var(--text-primary)]">{maxTax}</td>
+                    <td className="px-3 sm:px-5 py-2.5 text-[var(--text-primary)]">{range}</td>
+                    <td className="px-3 sm:px-5 py-2.5 text-[var(--text-primary)]">{rate}</td>
+                    <td className="px-3 sm:px-5 py-2.5 text-right text-[var(--text-primary)]">{maxTax}</td>
                   </tr>
                 ))}
               </tbody>
@@ -189,8 +189,8 @@ export default function TaxPage() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowModal(false)}>
-          <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200] p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-[var(--modal-bg)] rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-[17px] font-semibold mb-5 text-[var(--text-primary)]">เพิ่มรายการลดหย่อน</h2>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">

@@ -62,8 +62,8 @@ export default function DashboardPage() {
       return <p className="text-[13px] text-[var(--text-tertiary)] text-center py-6">ไม่มีข้อมูล</p>;
     }
     return entries.map(([cat, amount]) => (
-      <div key={cat} className="flex items-center gap-3 mb-2.5">
-        <span className="w-28 text-right text-[12px] text-[var(--text-secondary)] shrink-0">{getCategoryLabel(cat)}</span>
+      <div key={cat} className="flex items-center gap-2 sm:gap-3 mb-2.5">
+        <span className="w-20 sm:w-28 text-right text-[11px] sm:text-[12px] text-[var(--text-secondary)] shrink-0 truncate">{getCategoryLabel(cat)}</span>
         <div className="flex-1 h-6 bg-[var(--bg-subtle)] rounded-md overflow-hidden">
           <div className="h-full rounded-md text-[10px] text-white font-medium flex items-center pl-2.5"
             style={{ width: `${Math.max((amount / max) * 100, 8)}%`, backgroundColor: color }}>
@@ -99,8 +99,8 @@ export default function DashboardPage() {
   return (
     <>
       <Topbar title="Dashboard" />
-      <div className="p-6 max-w-[1200px]">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="p-4 sm:p-6 max-w-[1200px]">
+        <div className="flex flex-wrap items-center gap-3 mb-6">
           <div className="flex bg-[var(--bg-subtle)] rounded-lg p-1">
             <button onClick={() => setViewMode("month")}
               className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-all duration-200 ${
@@ -135,7 +135,7 @@ export default function DashboardPage() {
         {/* Cash flow */}
         <div className="mb-2">
           <p className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-3">กระแสเงินสด</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-6">
             {cashFlowCards.map((stat) => (
               <div key={stat.label} className="bg-[var(--card-bg)] rounded-xl p-4 shadow-[var(--shadow-card)] border border-[var(--card-border)] transition-colors">
                 <p className="text-[11px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">{stat.label}</p>
@@ -148,7 +148,7 @@ export default function DashboardPage() {
         {/* Assets */}
         <div className="mb-6">
           <p className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-3">ทรัพย์สิน</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
             {assetCards.map((stat) => (
               <div key={stat.label} className="bg-[var(--card-bg)] rounded-xl p-4 shadow-[var(--shadow-card)] border border-[var(--card-border)] transition-colors">
                 <p className="text-[11px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">{stat.label}</p>
@@ -207,7 +207,27 @@ export default function DashboardPage() {
           <div className="px-5 py-4">
             <h3 className="font-semibold text-[14px] text-[var(--text-primary)]">รายการล่าสุด</h3>
           </div>
-          <div className="overflow-x-auto">
+          {/* Mobile card list */}
+          <div className="sm:hidden divide-y divide-[var(--table-row-border)]">
+            {data?.recentTransactions?.map((tx) => (
+              <div key={tx.id} className="px-4 py-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium text-[var(--text-primary)] truncate">{tx.note || getCategoryLabel(tx.category)}</p>
+                    <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{new Date(tx.date).toLocaleDateString("th-TH")} - {getChannelLabel(tx.channel)}</p>
+                  </div>
+                  <p className={`text-[14px] font-semibold ml-3 shrink-0 ${tx.type === "income" ? "text-[var(--success)]" : "text-[var(--danger)]"}`}>
+                    {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amount)}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {(!data?.recentTransactions || data.recentTransactions.length === 0) && (
+              <div className="px-4 py-10 text-center text-[13px] text-[var(--text-tertiary)]">ยังไม่มีรายการ</div>
+            )}
+          </div>
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-[var(--table-header-bg)] border-y border-[var(--card-border)]">

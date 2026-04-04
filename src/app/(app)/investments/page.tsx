@@ -89,8 +89,8 @@ export default function InvestmentsPage() {
   return (
     <>
       <Topbar title="ลงทุน" />
-      <div className="p-6 max-w-[1200px]">
-        <div className="flex justify-between items-center mb-5">
+      <div className="p-4 sm:p-6 max-w-[1200px]">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
           <h2 className="font-semibold text-[15px] text-[var(--text-primary)]">พอร์ตลงทุน</h2>
           <button onClick={() => setShowAddModal(true)}
             className="px-4 py-2 bg-[var(--brand-red)] text-white rounded-lg text-[13px] font-medium hover:bg-[var(--brand-red-hover)] transition-colors">+ เพิ่มการลงทุน</button>
@@ -174,7 +174,7 @@ export default function InvestmentsPage() {
 
       {/* Add modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowAddModal(false)}>
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200] p-4" onClick={() => setShowAddModal(false)}>
           <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-[17px] font-semibold mb-5 text-[var(--text-primary)]">เพิ่มการลงทุน</h2>
             <form onSubmit={handleAdd}>
@@ -230,8 +230,8 @@ export default function InvestmentsPage() {
 
       {/* Transaction modal */}
       {showTxModal && txInv && (
-        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200]" onClick={() => setShowTxModal(false)}>
-          <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200] p-4" onClick={() => setShowTxModal(false)}>
+          <div className="bg-[var(--modal-bg)] rounded-2xl p-5 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-[17px] font-semibold mb-1 text-[var(--text-primary)]">
               {txMode === "buy" ? "ซื้อเพิ่ม" : txMode === "sell" ? "ขาย" : "อัพเดทมูลค่า"}
             </h2>
