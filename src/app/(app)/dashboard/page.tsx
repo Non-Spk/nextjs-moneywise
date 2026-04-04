@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
+import LoadingScreen from "@/components/LoadingScreen";
 import {
   getCategoryLabel,
   getChannelLabel,
@@ -51,6 +52,8 @@ export default function DashboardPage() {
   }, [viewMode, month, year]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  if (!data) return <><Topbar title="Dashboard" /><LoadingScreen /></>;
 
   function renderCategoryBars(categories: Record<string, number>, color: string) {
     const entries = Object.entries(categories).sort((a, b) => b[1] - a[1]);

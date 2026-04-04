@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
+import LoadingScreen from "@/components/LoadingScreen";
 import { useAmount } from "@/lib/useAmount";
 import { exportToExcel } from "@/lib/export";
 
@@ -17,6 +18,7 @@ interface CreditCard {
 export default function CreditCardsPage() {
   const formatCurrency = useAmount();
   const [cards, setCards] = useState<CreditCard[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formBank, setFormBank] = useState("");
   const [formNumber, setFormNumber] = useState("");
@@ -40,9 +42,12 @@ export default function CreditCardsPage() {
   const fetchCards = useCallback(async () => {
     const res = await fetch("/api/credit-cards");
     if (res.ok) setCards(await res.json());
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchCards(); }, [fetchCards]);
+
+  if (loading) return <><Topbar title="บัตรเครดิต & หนี้สิน" /><LoadingScreen /></>;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

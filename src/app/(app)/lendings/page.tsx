@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
+import LoadingScreen from "@/components/LoadingScreen";
 import { useAmount } from "@/lib/useAmount";
 
 interface Lending {
@@ -18,6 +19,7 @@ interface Lending {
 export default function LendingsPage() {
   const formatCurrency = useAmount();
   const [lendings, setLendings] = useState<Lending[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formBorrower, setFormBorrower] = useState("");
   const [formAmount, setFormAmount] = useState("");
@@ -27,9 +29,12 @@ export default function LendingsPage() {
   const fetchLendings = useCallback(async () => {
     const res = await fetch("/api/lendings");
     if (res.ok) setLendings(await res.json());
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchLendings(); }, [fetchLendings]);
+
+  if (loading) return <><Topbar title="ให้ยืม" /><LoadingScreen /></>;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

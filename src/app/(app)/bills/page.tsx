@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
+import LoadingScreen from "@/components/LoadingScreen";
 import { useAmount } from "@/lib/useAmount";
 import { exportToExcel } from "@/lib/export";
 
@@ -17,6 +18,7 @@ interface Bill {
 export default function BillsPage() {
   const formatCurrency = useAmount();
   const [bills, setBills] = useState<Bill[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formName, setFormName] = useState("");
   const [formAmount, setFormAmount] = useState("");
@@ -25,9 +27,12 @@ export default function BillsPage() {
   const fetchBills = useCallback(async () => {
     const res = await fetch("/api/bills");
     if (res.ok) setBills(await res.json());
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchBills(); }, [fetchBills]);
+
+  if (loading) return <><Topbar title="บิลรายเดือน" /><LoadingScreen /></>;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

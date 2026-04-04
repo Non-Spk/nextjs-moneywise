@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
+import LoadingScreen from "@/components/LoadingScreen";
 import { getInvestmentTypeLabel, getPhysicalAssetTypeLabel, PHYSICAL_ASSET_TYPES } from "@/lib/constants";
 import { useAmount } from "@/lib/useAmount";
 
@@ -14,6 +15,7 @@ export default function AssetsPage() {
   const [savings, setSavings] = useState<SavingsAccount[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [physicalAssets, setPhysicalAssets] = useState<PhysicalAsset[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAddPA, setShowAddPA] = useState(false);
   const [paName, setPaName] = useState("");
   const [paType, setPaType] = useState("gold");
@@ -26,9 +28,12 @@ export default function AssetsPage() {
     if (sRes.ok) setSavings(await sRes.json());
     if (iRes.ok) setInvestments(await iRes.json());
     if (pRes.ok) setPhysicalAssets(await pRes.json());
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  if (loading) return <><Topbar title="ทรัพย์สินรวม" /><LoadingScreen /></>;
 
   async function handleAddPA(e: React.FormEvent) {
     e.preventDefault();

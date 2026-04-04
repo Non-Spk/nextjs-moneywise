@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
+import LoadingScreen from "@/components/LoadingScreen";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, CURRENCIES } from "@/lib/constants";
 
 interface Category {
@@ -21,6 +22,7 @@ interface ExchangeRate {
 export default function SettingsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formType, setFormType] = useState("expense");
   const [formValue, setFormValue] = useState("");
@@ -41,7 +43,9 @@ export default function SettingsPage() {
     if (res.ok) setExchangeRates(await res.json());
   }, []);
 
-  useEffect(() => { fetchCategories(); fetchRates(); }, [fetchCategories, fetchRates]);
+  useEffect(() => { Promise.all([fetchCategories(), fetchRates()]).then(() => setLoading(false)); }, [fetchCategories, fetchRates]);
+
+  if (loading) return <><Topbar title="ตั้งค่า" /><LoadingScreen /></>;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

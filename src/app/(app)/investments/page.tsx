@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
+import LoadingScreen from "@/components/LoadingScreen";
 import { INVESTMENT_TYPES, CURRENCIES, getInvestmentTypeLabel } from "@/lib/constants";
 import { useAmount } from "@/lib/useAmount";
 
@@ -13,6 +14,7 @@ type TxMode = "buy" | "sell" | "value_update";
 export default function InvestmentsPage() {
   const formatCurrency = useAmount();
   const [investments, setInvestments] = useState<Investment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTxModal, setShowTxModal] = useState(false);
   const [txInv, setTxInv] = useState<Investment | null>(null);
@@ -36,9 +38,12 @@ export default function InvestmentsPage() {
   const fetchInvestments = useCallback(async () => {
     const res = await fetch("/api/investments");
     if (res.ok) setInvestments(await res.json());
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchInvestments(); }, [fetchInvestments]);
+
+  if (loading) return <><Topbar title="เงินลงทุน" /><LoadingScreen /></>;
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();

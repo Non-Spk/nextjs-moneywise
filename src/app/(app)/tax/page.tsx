@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
+import LoadingScreen from "@/components/LoadingScreen";
 import {
   TAX_DEDUCTION_CATEGORIES,
   calculateTax,
@@ -21,6 +22,7 @@ export default function TaxPage() {
   const formatCurrency = useAmount();
   const [deductions, setDeductions] = useState<TaxDeduction[]>([]);
   const [totalIncome, setTotalIncome] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formCategory, setFormCategory] = useState("");
   const [formName, setFormName] = useState("");
@@ -33,9 +35,12 @@ export default function TaxPage() {
     ]);
     if (deductRes.ok) setDeductions(await deductRes.json());
     if (dashRes.ok) { const dash = await dashRes.json(); setTotalIncome(dash.totalIncome); }
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  if (loading) return <><Topbar title="ภาษี" /><LoadingScreen /></>;
 
   const personalDeduction = 60000;
   const expenseDeduction = Math.min(totalIncome * 0.5, 100000);

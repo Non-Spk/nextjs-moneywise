@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
+import LoadingScreen from "@/components/LoadingScreen";
 import {
   EXPENSE_CATEGORIES,
   INCOME_CATEGORIES,
@@ -63,6 +64,7 @@ export default function TransactionsPage() {
   const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [defaults, setDefaults] = useState<SmartDefaults>(FALLBACK_DEFAULTS);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("simple");
 
@@ -128,6 +130,10 @@ export default function TransactionsPage() {
   }, []);
 
   useEffect(() => { fetchTransactions(); fetchCreditCards(); fetchCustomCategories(); fetchDefaults(); }, [fetchTransactions, fetchCreditCards, fetchCustomCategories, fetchDefaults]);
+
+  useEffect(() => { if (transactions.length >= 0 && defaults) setLoading(false); }, [transactions, defaults]);
+
+  if (loading) return <><Topbar title="รายรับ-รายจ่าย" /><LoadingScreen /></>;
 
   async function handleSimpleSubmit(e: React.FormEvent) {
     e.preventDefault();

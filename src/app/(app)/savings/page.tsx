@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Topbar from "@/components/Topbar";
+import LoadingScreen from "@/components/LoadingScreen";
 import { useAmount } from "@/lib/useAmount";
 
 interface SavingsTransaction {
@@ -25,6 +26,7 @@ interface SavingsAccount {
 export default function SavingsPage() {
   const formatCurrency = useAmount();
   const [accounts, setAccounts] = useState<SavingsAccount[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTxModal, setShowTxModal] = useState(false);
   const [txAccount, setTxAccount] = useState<SavingsAccount | null>(null);
@@ -45,9 +47,12 @@ export default function SavingsPage() {
   const fetchAccounts = useCallback(async () => {
     const res = await fetch("/api/savings");
     if (res.ok) setAccounts(await res.json());
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
+
+  if (loading) return <><Topbar title="เงินออม" /><LoadingScreen /></>;
 
   async function handleAddAccount(e: React.FormEvent) {
     e.preventDefault();
