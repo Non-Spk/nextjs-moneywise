@@ -1,45 +1,52 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUserId } from "@/lib/api-helpers";
+import { getAuthUserId, safeResponse } from "@/lib/api-helpers";
+import { sanitizeString, parseAmount } from "@/lib/validation";
 
-// GET /api/credit-cards
 export async function GET() {
-  const result = await getAuthUserId();
-  if ("error" in result) return result.error;
+  try {
+    const result = await getAuthUserId();
+    if ("error" in result) return result.error;
 
-  const cards = await prisma.creditCard.findMany({
-    where: { userId: result.userId },
-    orderBy: { createdAt: "desc" },
-  });
+    const cards = await prisma.creditCard.findMany({
+      where: { userId: result.userId },
+      orderBy: { createdAt: "desc" },
+    });
 
-  return NextResponse.json(cards);
+    return NextResponse.json(cards);
+  } catch (err) {
+    return safeResponse(err);
+  }
 }
 
-// POST /api/credit-cards
 export async function POST(req: Request) {
-  const result = await getAuthUserId();
-  if ("error" in result) return result.error;
+  try {
+    const result = await getAuthUserId();
+    if ("error" in result) return result.error;
 
-  const { bankName, cardNumber, creditLimit, balance, dueDate } =
-    await req.json();
+    const body = await req.json();
+    const bankName = sanitizeString(body.bankName, 100);
+    const cardNumber = sanitizeString(body.cardNumber, 20);
+    const creditLimit = parseAmount(body.creditLimit);
+    const dueDate = parseInt(body.dueDate);
 
-  if (!bankName || !cardNumber || !creditLimit || dueDate === undefined) {
-    return NextResponse.json(
-      { error: "กรุณากรอกข้อมูลให้ครบถ้วน" },
-      { status: 400 }
-    );
+    if (!bankName || !cardNumber || !creditLimit || isNaN(dueDate) || dueDate < 1 || dueDate > 31) {
+      return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" }, { status: 400 });
+    }
+
+    const card = await prisma.creditCard.create({
+      data: {
+        userId: result.userId,
+        bankName,
+        cardNumber: cardNumber.slice(-4),
+        creditLimit,
+        balance: parseFloat(body.balance || "0") || 0,
+        dueDate,
+      },
+    });
+
+    return NextResponse.json(card, { status: 201 });
+  } catch (err) {
+    return safeResponse(err);
   }
-
-  const card = await prisma.creditCard.create({
-    data: {
-      userId: result.userId,
-      bankName,
-      cardNumber: cardNumber.slice(-4), // store only last 4 digits
-      creditLimit: parseFloat(creditLimit),
-      balance: parseFloat(balance || "0"),
-      dueDate: parseInt(dueDate),
-    },
-  });
-
-  return NextResponse.json(card, { status: 201 });
 }

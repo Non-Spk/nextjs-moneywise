@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUserId } from "@/lib/api-helpers";
+import { getAuthUserId, safeResponse } from "@/lib/api-helpers";
+import { sanitizeString } from "@/lib/validation";
 
 async function getRate(userId: string, currency: string): Promise<number> {
   if (currency === "THB") return 1;
@@ -9,73 +10,84 @@ async function getRate(userId: string, currency: string): Promise<number> {
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const result = await getAuthUserId();
-  if ("error" in result) return result.error;
+  try {
+    const result = await getAuthUserId();
+    if ("error" in result) return result.error;
 
-  const { id } = await params;
-  const body = await req.json();
-  const { type, amount, units, pricePerUnit, note, date } = body;
+    const { id } = await params;
+    const body = await req.json();
+    const { type, amount, units, pricePerUnit, date } = body;
+    const note = sanitizeString(body.note, 500);
 
-  const inv = await prisma.investment.findFirst({ where: { id, userId: result.userId } });
-  if (!inv) return NextResponse.json({ error: "ไม่พบรายการ" }, { status: 404 });
+    const inv = await prisma.investment.findFirst({ where: { id, userId: result.userId } });
+    if (!inv) return NextResponse.json({ error: "ไม่พบรายการ" }, { status: 404 });
 
-  const txAmount = parseFloat(amount) || 0;
-  const txUnits = parseFloat(units) || 0;
-  const txDate = new Date(date || new Date());
-  const rate = await getRate(result.userId, inv.currency);
+    const txAmount = parseFloat(amount) || 0;
+    const txUnits = parseFloat(units) || 0;
+    const txDate = new Date(date || new Date());
+    const rate = await getRate(result.userId, inv.currency);
 
-  if (type === "buy") {
-    await prisma.investment.update({
-      where: { id },
-      data: { costBasis: { increment: txAmount }, currentValue: { increment: txAmount }, units: { increment: txUnits } },
-    });
-    await prisma.transaction.create({
+    if (type === "buy") {
+      await prisma.investment.update({
+        where: { id },
+        data: { costBasis: { increment: txAmount }, currentValue: { increment: txAmount }, units: { increment: txUnits } },
+      });
+      await prisma.transaction.create({
+        data: {
+          userId: result.userId, type: "expense", category: "investment_buy",
+          channel: "transfer", amount: txAmount * rate,
+          note: `ซื้อเพิ่ม ${inv.name}${inv.currency !== "THB" ? ` (${txAmount} ${inv.currency} @ ${rate})` : ""}`,
+          date: txDate,
+        },
+      });
+    } else if (type === "sell") {
+      const sellUnits = Math.min(txUnits, inv.units);
+      const costPerUnit = inv.units > 0 ? inv.costBasis / inv.units : 0;
+      const costReduction = costPerUnit * sellUnits;
+      await prisma.investment.update({
+        where: { id },
+        data: { costBasis: { decrement: costReduction }, currentValue: { decrement: Math.min(txAmount, inv.currentValue) }, units: { decrement: sellUnits } },
+      });
+      await prisma.transaction.create({
+        data: {
+          userId: result.userId, type: "income", category: "investment_sell",
+          channel: "transfer", amount: txAmount * rate,
+          note: `ขาย ${inv.name}${inv.currency !== "THB" ? ` (${txAmount} ${inv.currency} @ ${rate})` : ""}`,
+          date: txDate,
+        },
+      });
+    } else if (type === "value_update") {
+      await prisma.investment.update({ where: { id }, data: { currentValue: txAmount } });
+    } else {
+      return NextResponse.json({ error: "ประเภทไม่ถูกต้อง" }, { status: 400 });
+    }
+
+    await prisma.investmentTransaction.create({
       data: {
-        userId: result.userId, type: "expense", category: "investment_buy",
-        channel: "transfer", amount: txAmount * rate,
-        note: `ซื้อเพิ่ม ${inv.name}${inv.currency !== "THB" ? ` (${txAmount} ${inv.currency} @ ${rate})` : ""}`,
-        date: txDate,
+        investmentId: id, type, amount: txAmount, units: txUnits, exchangeRate: rate,
+        pricePerUnit: parseFloat(pricePerUnit) || 0, note, date: txDate,
       },
     });
-  } else if (type === "sell") {
-    const sellUnits = Math.min(txUnits, inv.units);
-    const costPerUnit = inv.units > 0 ? inv.costBasis / inv.units : 0;
-    const costReduction = costPerUnit * sellUnits;
-    await prisma.investment.update({
-      where: { id },
-      data: { costBasis: { decrement: costReduction }, currentValue: { decrement: Math.min(txAmount, inv.currentValue) }, units: { decrement: sellUnits } },
-    });
-    await prisma.transaction.create({
-      data: {
-        userId: result.userId, type: "income", category: "investment_sell",
-        channel: "transfer", amount: txAmount * rate,
-        note: `ขาย ${inv.name}${inv.currency !== "THB" ? ` (${txAmount} ${inv.currency} @ ${rate})` : ""}`,
-        date: txDate,
-      },
-    });
-  } else if (type === "value_update") {
-    await prisma.investment.update({ where: { id }, data: { currentValue: txAmount } });
+
+    const updated = await prisma.investment.findUnique({ where: { id } });
+    return NextResponse.json(updated);
+  } catch (err) {
+    return safeResponse(err);
   }
-
-  await prisma.investmentTransaction.create({
-    data: {
-      investmentId: id, type, amount: txAmount, units: txUnits, exchangeRate: rate,
-      pricePerUnit: parseFloat(pricePerUnit) || 0, note: note || "", date: txDate,
-    },
-  });
-
-  const updated = await prisma.investment.findUnique({ where: { id } });
-  return NextResponse.json(updated);
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const result = await getAuthUserId();
-  if ("error" in result) return result.error;
+  try {
+    const result = await getAuthUserId();
+    if ("error" in result) return result.error;
 
-  const { id } = await params;
-  const inv = await prisma.investment.findFirst({ where: { id, userId: result.userId } });
-  if (!inv) return NextResponse.json({ error: "ไม่พบรายการ" }, { status: 404 });
+    const { id } = await params;
+    const inv = await prisma.investment.findFirst({ where: { id, userId: result.userId } });
+    if (!inv) return NextResponse.json({ error: "ไม่พบรายการ" }, { status: 404 });
 
-  await prisma.investment.delete({ where: { id } });
-  return NextResponse.json({ success: true });
+    await prisma.investment.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return safeResponse(err);
+  }
 }

@@ -1,42 +1,44 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUserId } from "@/lib/api-helpers";
+import { getAuthUserId, safeResponse } from "@/lib/api-helpers";
+import { sanitizeString, parseAmount } from "@/lib/validation";
 
-// GET /api/bills
 export async function GET() {
-  const result = await getAuthUserId();
-  if ("error" in result) return result.error;
+  try {
+    const result = await getAuthUserId();
+    if ("error" in result) return result.error;
 
-  const bills = await prisma.bill.findMany({
-    where: { userId: result.userId },
-    orderBy: { dueDay: "asc" },
-  });
+    const bills = await prisma.bill.findMany({
+      where: { userId: result.userId },
+      orderBy: { dueDay: "asc" },
+    });
 
-  return NextResponse.json(bills);
+    return NextResponse.json(bills);
+  } catch (err) {
+    return safeResponse(err);
+  }
 }
 
-// POST /api/bills
 export async function POST(req: Request) {
-  const result = await getAuthUserId();
-  if ("error" in result) return result.error;
+  try {
+    const result = await getAuthUserId();
+    if ("error" in result) return result.error;
 
-  const { name, amount, dueDay } = await req.json();
+    const body = await req.json();
+    const name = sanitizeString(body.name, 200);
+    const amount = parseAmount(body.amount);
+    const dueDay = parseInt(body.dueDay);
 
-  if (!name || !amount || dueDay === undefined) {
-    return NextResponse.json(
-      { error: "กรุณากรอกข้อมูลให้ครบถ้วน" },
-      { status: 400 }
-    );
+    if (!name || !amount || isNaN(dueDay) || dueDay < 1 || dueDay > 31) {
+      return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" }, { status: 400 });
+    }
+
+    const bill = await prisma.bill.create({
+      data: { userId: result.userId, name, amount, dueDay },
+    });
+
+    return NextResponse.json(bill, { status: 201 });
+  } catch (err) {
+    return safeResponse(err);
   }
-
-  const bill = await prisma.bill.create({
-    data: {
-      userId: result.userId,
-      name,
-      amount: parseFloat(amount),
-      dueDay: parseInt(dueDay),
-    },
-  });
-
-  return NextResponse.json(bill, { status: 201 });
 }
