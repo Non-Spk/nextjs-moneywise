@@ -3,7 +3,14 @@ import { NextResponse } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/api/auth", "/api/register"];
 
-export default auth((req) => {
+/**
+ * Auth-aware proxy handler for Next.js 16+
+ * Replaces the deprecated middleware.ts convention.
+ *
+ * The `auth()` wrapper from next-auth v5 injects `req.auth`
+ * with the current session, then delegates to our callback.
+ */
+const handler = auth((req) => {
   const { pathname } = req.nextUrl;
 
   // Allow public paths
@@ -42,6 +49,12 @@ export default auth((req) => {
 
   return NextResponse.next();
 });
+
+// Named export for Next.js 16+ proxy convention
+export const proxy = handler;
+
+// Default export for backward compatibility with middleware convention
+export default handler;
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|icon|favicon.ico).*)"],
