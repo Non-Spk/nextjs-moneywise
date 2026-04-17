@@ -18,6 +18,7 @@ export const EXPENSE_CATEGORIES = [
   { value: "credit_card_payment", label: "ชำระหนี้บัตรเครดิต" },
   { value: "savings_deposit", label: "ฝากเงินออม" },
   { value: "investment_buy", label: "ซื้อลงทุน" },
+  { value: "investment_deposit", label: "ฝากเงินบัญชีลงทุน" },
   { value: "other_expense", label: "อื่นๆ" },
 ] as const;
 
@@ -29,6 +30,7 @@ export const INCOME_CATEGORIES = [
   { value: "cashback", label: "Cashback บัตรเครดิต" },
   { value: "savings_withdraw", label: "ถอนเงินออม" },
   { value: "investment_sell", label: "ขายลงทุน" },
+  { value: "investment_withdraw", label: "ถอนเงินบัญชีลงทุน" },
   { value: "other_income", label: "อื่นๆ" },
 ] as const;
 

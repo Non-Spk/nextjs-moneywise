@@ -31,8 +31,8 @@ export async function GET(req: Request) {
       orderBy: { date: "desc" },
     });
 
-    const INTERNAL_EXPENSE = ["credit_card_payment", "savings_deposit", "investment_buy"];
-    const INTERNAL_INCOME = ["cashback", "savings_withdraw", "investment_sell"];
+    const INTERNAL_EXPENSE = ["credit_card_payment", "savings_deposit", "investment_buy", "investment_deposit"];
+    const INTERNAL_INCOME = ["cashback", "savings_withdraw", "investment_sell", "investment_withdraw"];
 
     const totalIncome = transactions
       .filter((t) => t.type === "income" && !INTERNAL_INCOME.includes(t.category))
@@ -97,6 +97,16 @@ export async function GET(req: Request) {
     const totalInvestment = investments.reduce((sum, i) => sum + i.currentValue * (rateMap[i.currency] || 1), 0);
     const totalInvestmentCost = investments.reduce((sum, i) => sum + i.costBasis * (rateMap[i.currency] || 1), 0);
 
+    const investmentAccounts = await prisma.investmentAccount.findMany({
+      where: { userId: result.userId },
+    });
+    const investmentAccountBalances = investmentAccounts.map((a) => ({
+      currency: a.currency,
+      balance: a.balance,
+      balanceTHB: a.balance * (rateMap[a.currency] || 1),
+    }));
+    const totalInvestmentAccountBalance = investmentAccountBalances.reduce((sum, a) => sum + a.balanceTHB, 0);
+
     const physicalAssets = await prisma.physicalAsset.findMany({
       where: { userId: result.userId },
     });
@@ -115,6 +125,8 @@ export async function GET(req: Request) {
       totalSavings,
       totalInvestment,
       totalInvestmentCost,
+      totalInvestmentAccountBalance,
+      investmentAccountBalances,
       totalPhysicalAssets,
       totalLent,
       lendingByBorrower,

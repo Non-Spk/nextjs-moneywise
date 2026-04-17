@@ -28,6 +28,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const rate = await getRate(result.userId, inv.currency);
 
     if (type === "buy") {
+      // Check investment account balance
+      const account = await prisma.investmentAccount.findUnique({
+        where: { userId_currency: { userId: result.userId, currency: inv.currency } },
+      });
+
+      if (!account || account.balance < txAmount) {
+        return NextResponse.json(
+          { error: `ยอดเงินในบัญชีลงทุน ${inv.currency} ไม่เพียงพอ (มี ${account?.balance?.toFixed(2) || "0.00"} ${inv.currency})` },
+          { status: 400 }
+        );
+      }
+
+      // Deduct from investment account
+      await prisma.investmentAccount.update({
+        where: { id: account.id },
+        data: { balance: { decrement: txAmount } },
+      });
+
       await prisma.investment.update({
         where: { id },
         data: { costBasis: { increment: txAmount }, currentValue: { increment: txAmount }, units: { increment: txUnits } },
@@ -48,6 +66,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         where: { id },
         data: { costBasis: { decrement: costReduction }, currentValue: { decrement: Math.min(txAmount, inv.currentValue) }, units: { decrement: sellUnits } },
       });
+
+      // Credit back to investment account
+      const account = await prisma.investmentAccount.upsert({
+        where: { userId_currency: { userId: result.userId, currency: inv.currency } },
+        update: { balance: { increment: txAmount } },
+        create: { userId: result.userId, currency: inv.currency, balance: txAmount },
+      });
+
       await prisma.transaction.create({
         data: {
           userId: result.userId, type: "income", category: "investment_sell",

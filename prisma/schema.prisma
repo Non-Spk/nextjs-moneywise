@@ -22,6 +22,7 @@ model User {
   categories   Category[]
   savingsAccounts SavingsAccount[]
   investments  Investment[]
+  investmentAccounts InvestmentAccount[]
   physicalAssets PhysicalAsset[]
   exchangeRates ExchangeRate[]
 }
@@ -171,6 +172,18 @@ model PhysicalAsset {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model InvestmentAccount {
+  id        String   @id @default(cuid())
+  userId    String
+  currency  String   // "THB" | "USD" | "EUR" etc.
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, currency])
 }
 
 model ExchangeRate {

@@ -59,8 +59,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "ประเภทไม่ถูกต้อง" }, { status: 400 });
     }
 
+    // Check investment account balance
+    const account = await prisma.investmentAccount.findUnique({
+      where: { userId_currency: { userId: result.userId, currency: cur } },
+    });
+
+    if (!account || account.balance < amount) {
+      return NextResponse.json(
+        { error: `ยอดเงินในบัญชีลงทุน ${cur} ไม่เพียงพอ (มี ${account?.balance?.toFixed(2) || "0.00"} ${cur})` },
+        { status: 400 }
+      );
+    }
+
     const u = parseFloat(body.units) || 0;
     const rate = await getRate(result.userId, cur);
+
+    // Deduct from investment account
+    await prisma.investmentAccount.update({
+      where: { id: account.id },
+      data: { balance: { decrement: amount } },
+    });
 
     const investment = await prisma.investment.create({
       data: {

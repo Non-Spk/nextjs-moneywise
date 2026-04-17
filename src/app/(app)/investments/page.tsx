@@ -8,15 +8,18 @@ import { useAmount } from "@/lib/useAmount";
 
 interface InvestmentTx { id: string; type: string; amount: number; units: number; pricePerUnit: number; note: string; date: string; }
 interface Investment { id: string; name: string; type: string; currency: string; currentRate: number; costBasis: number; currentValue: number; units: number; note: string; transactions: InvestmentTx[]; }
+interface InvAccount { id: string; currency: string; balance: number; rate: number; balanceTHB: number; }
 
 type TxMode = "buy" | "sell" | "value_update";
 
 export default function InvestmentsPage() {
   const formatCurrency = useAmount();
   const [investments, setInvestments] = useState<Investment[]>([]);
+  const [accounts, setAccounts] = useState<InvAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTxModal, setShowTxModal] = useState(false);
+  const [showAccModal, setShowAccModal] = useState(false);
   const [txInv, setTxInv] = useState<Investment | null>(null);
   const [txMode, setTxMode] = useState<TxMode>("buy");
 
@@ -35,13 +38,25 @@ export default function InvestmentsPage() {
   const [txNote, setTxNote] = useState("");
   const [txDate, setTxDate] = useState(new Date().toISOString().split("T")[0]);
 
-  const fetchInvestments = useCallback(async () => {
-    const res = await fetch("/api/investments");
-    if (res.ok) setInvestments(await res.json());
+  const [sellAll, setSellAll] = useState(false);
+  // Track which field was last edited by the user to know which two to auto-calc from
+  const [sellLastEdited, setSellLastEdited] = useState<"units" | "price" | "amount" | null>(null);
+
+  const [accCurrency, setAccCurrency] = useState("THB");
+  const [accAmount, setAccAmount] = useState("");
+  const [accAction, setAccAction] = useState<"deposit" | "withdraw">("deposit");
+
+  const fetchData = useCallback(async () => {
+    const [invRes, accRes] = await Promise.all([
+      fetch("/api/investments"),
+      fetch("/api/investment-accounts"),
+    ]);
+    if (invRes.ok) setInvestments(await invRes.json());
+    if (accRes.ok) setAccounts(await accRes.json());
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchInvestments(); }, [fetchInvestments]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   if (loading) return <><Topbar title="เงินลงทุน" /><LoadingScreen /></>;
 
@@ -52,15 +67,26 @@ export default function InvestmentsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: formName, type: formType, amount: formAmount, units: formUnits, pricePerUnit: formPrice, note: formNote, date: formDate, currency: formCurrency }),
     });
-    if (res.ok) { setShowAddModal(false); setFormName(""); setFormAmount(""); setFormUnits(""); setFormPrice(""); setFormNote(""); setFormCurrency("THB"); fetchInvestments(); }
+    if (res.ok) {
+      setShowAddModal(false); setFormName(""); setFormAmount(""); setFormUnits(""); setFormPrice(""); setFormNote(""); setFormCurrency("THB"); fetchData();
+    } else {
+      const err = await res.json();
+      alert(err.error || "เกิดข้อผิดพลาด");
+    }
   }
 
   function openTxModal(inv: Investment, mode: TxMode) {
     setTxInv(inv);
     setTxMode(mode);
     setTxAmount(mode === "value_update" ? String(inv.currentValue) : "");
-    setTxUnits(""); setTxPrice(""); setTxNote("");
+    setTxUnits("");
+    // For sell mode, pre-fill current price per unit
+    const currentPricePerUnit = inv.units > 0 ? +(inv.currentValue / inv.units).toFixed(4) : 0;
+    setTxPrice(mode === "sell" && currentPricePerUnit > 0 ? String(currentPricePerUnit) : "");
+    setTxNote("");
     setTxDate(new Date().toISOString().split("T")[0]);
+    setSellAll(false);
+    setSellLastEdited(null);
     setShowTxModal(true);
   }
 
@@ -72,19 +98,106 @@ export default function InvestmentsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: txMode, amount: txAmount, units: txUnits, pricePerUnit: txPrice, note: txNote, date: txDate }),
     });
-    if (res.ok) { setShowTxModal(false); setTxInv(null); fetchInvestments(); }
+    if (res.ok) {
+      setShowTxModal(false); setTxInv(null); fetchData();
+    } else {
+      const err = await res.json();
+      alert(err.error || "เกิดข้อผิดพลาด");
+    }
   }
 
   async function handleDelete(id: string) {
     if (!confirm("ต้องการลบรายการลงทุนนี้?")) return;
     const res = await fetch(`/api/investments/${id}`, { method: "DELETE" });
-    if (res.ok) fetchInvestments();
+    if (res.ok) fetchData();
+  }
+
+  async function handleAccAction(e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch("/api/investment-accounts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currency: accCurrency, amount: accAmount, action: accAction }),
+    });
+    if (res.ok) {
+      setShowAccModal(false); setAccAmount(""); fetchData();
+    } else {
+      const err = await res.json();
+      alert(err.error || "เกิดข้อผิดพลาด");
+    }
   }
 
   const totalCost = investments.reduce((s, i) => s + i.costBasis * i.currentRate, 0);
   const totalValue = investments.reduce((s, i) => s + i.currentValue * i.currentRate, 0);
   const totalPL = totalValue - totalCost;
+  const totalAccBalanceTHB = accounts.reduce((s, a) => s + a.balanceTHB, 0);
   const inputClass = "w-full px-3.5 py-2.5 border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] rounded-lg text-[13px] outline-none focus:border-[var(--brand-red)] transition-colors";
+
+  // Get account balance for a currency
+  const getAccBalance = (currency: string) => accounts.find((a) => a.currency === currency)?.balance || 0;
+
+  // Sell auto-calculation: given two of three values, compute the third
+  // When user types units manually -> integer only, capped at floor(units)
+  // When computed from amount/price or sellAll -> use actual decimal value, capped at real units
+  function sellCalc(field: "units" | "price" | "amount", value: string) {
+    const realMax = txInv ? txInv.units : 0;
+
+    if (field === "units") {
+      // User is typing units manually -> integer, capped at floor
+      const intMax = Math.floor(realMax);
+      const u = parseInt(value) || 0;
+      const clamped = Math.min(Math.max(u, 0), intMax);
+      setTxUnits(value === "" ? "" : String(clamped));
+      setSellLastEdited("units");
+      const p = parseFloat(txPrice) || 0;
+      const a = parseFloat(txAmount) || 0;
+      if (p > 0 && clamped > 0) {
+        setTxAmount(String(+(clamped * p).toFixed(2)));
+      } else if (a > 0 && clamped > 0) {
+        setTxPrice(String(+(a / clamped).toFixed(4)));
+      }
+    } else if (field === "price") {
+      setTxPrice(value);
+      setSellLastEdited("price");
+      const p = parseFloat(value) || 0;
+      const u = parseFloat(txUnits) || 0;
+      const a = parseFloat(txAmount) || 0;
+      if (u > 0 && p > 0) {
+        setTxAmount(String(+(u * p).toFixed(2)));
+      } else if (a > 0 && p > 0) {
+        // Computed units -> use real decimal, capped at actual units
+        const calc = Math.min(a / p, realMax);
+        setTxUnits(String(+calc.toFixed(6)));
+      }
+    } else {
+      setTxAmount(value);
+      setSellLastEdited("amount");
+      const a = parseFloat(value) || 0;
+      const u = parseFloat(txUnits) || 0;
+      const p = parseFloat(txPrice) || 0;
+      if (u > 0 && a > 0) {
+        setTxPrice(String(+(a / u).toFixed(4)));
+      } else if (p > 0 && a > 0) {
+        // Computed units -> use real decimal, capped at actual units
+        const calc = Math.min(a / p, realMax);
+        setTxUnits(String(+calc.toFixed(6)));
+      }
+    }
+  }
+
+  function handleSellAllToggle(checked: boolean) {
+    setSellAll(checked);
+    if (checked && txInv) {
+      // Use actual units (may be decimal)
+      const allUnits = txInv.units;
+      setTxUnits(String(allUnits));
+      setSellLastEdited("units");
+      const p = parseFloat(txPrice) || 0;
+      if (p > 0 && allUnits > 0) {
+        setTxAmount(String(+(allUnits * p).toFixed(2)));
+      }
+    }
+  }
 
   return (
     <>
@@ -92,9 +205,35 @@ export default function InvestmentsPage() {
       <div className="p-4 sm:p-6 max-w-[1200px]">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
           <h2 className="font-semibold text-[15px] text-[var(--text-primary)]">พอร์ตลงทุน</h2>
-          <button onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-[var(--brand-red)] text-white rounded-lg text-[13px] font-medium hover:bg-[var(--brand-red-hover)] transition-colors">+ เพิ่มการลงทุน</button>
+          <div className="flex gap-2">
+            <button onClick={() => setShowAccModal(true)}
+              className="px-4 py-2 border border-[var(--input-border)] text-[var(--text-primary)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">จัดการบัญชีเงินลงทุน</button>
+            <button onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-[var(--brand-red)] text-white rounded-lg text-[13px] font-medium hover:bg-[var(--brand-red-hover)] transition-colors">+ เพิ่มการลงทุน</button>
+          </div>
         </div>
+
+        {/* Investment Account Balances */}
+        {accounts.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-[13px] font-semibold text-[var(--text-secondary)] mb-3 uppercase tracking-wide">บัญชีเงินลงทุน</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {accounts.map((acc) => (
+                <div key={acc.id} className="bg-[var(--card-bg)] rounded-xl p-4 shadow-[var(--shadow-card)] border border-[var(--card-border)]">
+                  <p className="text-[11px] text-[var(--text-tertiary)] font-medium uppercase">{acc.currency}</p>
+                  <p className="text-[18px] font-bold mt-1 text-[var(--text-primary)]">{formatCurrency(acc.balance)}</p>
+                  {acc.currency !== "THB" && (
+                    <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">= {formatCurrency(acc.balanceTHB)} THB</p>
+                  )}
+                </div>
+              ))}
+              <div className="bg-[var(--card-bg)] rounded-xl p-4 shadow-[var(--shadow-card)] border border-[var(--card-border)] border-dashed">
+                <p className="text-[11px] text-[var(--text-tertiary)] font-medium uppercase">รวม (THB)</p>
+                <p className="text-[18px] font-bold mt-1 text-[var(--info)]">{formatCurrency(totalAccBalanceTHB)}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -172,7 +311,7 @@ export default function InvestmentsPage() {
         </div>
       </div>
 
-      {/* Add modal */}
+      {/* Add Investment modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200] p-4" onClick={() => setShowAddModal(false)}>
           <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
@@ -193,9 +332,9 @@ export default function InvestmentsPage() {
                 <select value={formCurrency} onChange={(e) => setFormCurrency(e.target.value)} className={inputClass}>
                   {CURRENCIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
-                {formCurrency !== "THB" && (
-                  <p className="text-[11px] text-[var(--text-tertiary)] mt-1">อัตราแลกเปลี่ยนจัดการได้ที่หน้าตั้งค่า</p>
-                )}
+                <p className="text-[11px] text-[var(--text-tertiary)] mt-1">
+                  ยอดคงเหลือบัญชี {formCurrency}: {formatCurrency(getAccBalance(formCurrency))} {formCurrency}
+                </p>
               </div>
               <div className="mb-4">
                 <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">จำนวนเงินลงทุน ({formCurrency})</label>
@@ -235,27 +374,79 @@ export default function InvestmentsPage() {
             <h2 className="text-[17px] font-semibold mb-1 text-[var(--text-primary)]">
               {txMode === "buy" ? "ซื้อเพิ่ม" : txMode === "sell" ? "ขาย" : "อัพเดทมูลค่า"}
             </h2>
-            <p className="text-[13px] text-[var(--text-secondary)] mb-5">
+            <p className="text-[13px] text-[var(--text-secondary)] mb-1">
               {txInv.name} - มูลค่า {formatCurrency(txInv.currentValue)} {txInv.currency}
               {txInv.currency !== "THB" && ` (${formatCurrency(txInv.currentValue * txInv.currentRate)} THB @ ${txInv.currentRate})`}
             </p>
+            {txMode === "buy" && (
+              <p className="text-[12px] text-[var(--text-tertiary)] mb-4">
+                ยอดคงเหลือบัญชี {txInv.currency}: {formatCurrency(getAccBalance(txInv.currency))} {txInv.currency}
+              </p>
+            )}
+            {txMode === "sell" && (
+              <p className="text-[12px] text-[var(--text-tertiary)] mb-4">
+                มี {txInv.units} หน่วย - เงินจะเข้าบัญชีลงทุน {txInv.currency}
+              </p>
+            )}
+            {txMode === "value_update" && <div className="mb-4" />}
             <form onSubmit={handleTx}>
-              <div className="mb-4">
-                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">
-                  {txMode === "value_update" ? `มูลค่าปัจจุบัน (${txInv.currency})` : `จำนวนเงิน (${txInv.currency})`}
-                </label>
-                <input type="number" value={txAmount} onChange={(e) => setTxAmount(e.target.value)} required min="0" step="0.01" className={inputClass} />
-              </div>
-              {txMode !== "value_update" && (
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div>
+              {/* SELL mode - special UI */}
+              {txMode === "sell" && (
+                <>
+                  <div className="mb-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={sellAll} onChange={(e) => handleSellAllToggle(e.target.checked)}
+                        className="w-4 h-4 rounded border-[var(--input-border)] accent-[var(--danger)]" />
+                      <span className="text-[13px] font-medium text-[var(--text-primary)]">ขายทั้งหมด ({txInv.units} หน่วย)</span>
+                    </label>
+                  </div>
+                  <div className="mb-4">
                     <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">จำนวนหน่วย</label>
-                    <input type="number" value={txUnits} onChange={(e) => setTxUnits(e.target.value)} min="0" step="any" className={inputClass} />
+                    <input type="number" value={txUnits}
+                      onChange={(e) => sellCalc("units", e.target.value)}
+                      required min="1" max={Math.floor(txInv.units)} step="1"
+                      disabled={sellAll}
+                      className={`${inputClass} ${sellAll ? "opacity-50" : ""}`} />
+                    {!sellAll && <p className="text-[11px] text-[var(--text-tertiary)] mt-1">สูงสุด {Math.floor(txInv.units)} หน่วย (จำนวนเต็มเท่านั้น)</p>}
                   </div>
-                  <div>
-                    <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">ราคา/หน่วย</label>
-                    <input type="number" value={txPrice} onChange={(e) => setTxPrice(e.target.value)} min="0" step="any" className={inputClass} />
+                  <div className="mb-4">
+                    <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">ราคาต่อหน่วย ({txInv.currency})</label>
+                    <input type="number" value={txPrice}
+                      onChange={(e) => sellCalc("price", e.target.value)}
+                      min="0" step="any" className={inputClass} />
                   </div>
+                  <div className="mb-4">
+                    <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">ราคารวม ({txInv.currency})</label>
+                    <input type="number" value={txAmount}
+                      onChange={(e) => sellCalc("amount", e.target.value)}
+                      required min="0" step="0.01" className={inputClass} />
+                  </div>
+                </>
+              )}
+              {/* BUY mode */}
+              {txMode === "buy" && (
+                <>
+                  <div className="mb-4">
+                    <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">จำนวนเงิน ({txInv.currency})</label>
+                    <input type="number" value={txAmount} onChange={(e) => setTxAmount(e.target.value)} required min="0" step="0.01" className={inputClass} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                      <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">จำนวนหน่วย</label>
+                      <input type="number" value={txUnits} onChange={(e) => setTxUnits(e.target.value)} min="0" step="any" className={inputClass} />
+                    </div>
+                    <div>
+                      <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">ราคา/หน่วย</label>
+                      <input type="number" value={txPrice} onChange={(e) => setTxPrice(e.target.value)} min="0" step="any" className={inputClass} />
+                    </div>
+                  </div>
+                </>
+              )}
+              {/* VALUE UPDATE mode */}
+              {txMode === "value_update" && (
+                <div className="mb-4">
+                  <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">มูลค่าปัจจุบัน ({txInv.currency})</label>
+                  <input type="number" value={txAmount} onChange={(e) => setTxAmount(e.target.value)} required min="0" step="0.01" className={inputClass} />
                 </div>
               )}
               <div className="mb-4">
@@ -271,6 +462,63 @@ export default function InvestmentsPage() {
                 <button type="submit" className={`px-4 py-2 text-white rounded-lg text-[13px] font-medium transition-colors ${
                   txMode === "buy" ? "bg-[var(--success)]" : txMode === "sell" ? "bg-[var(--danger)]" : "bg-[var(--info)]"
                 }`}>{txMode === "buy" ? "ซื้อ" : txMode === "sell" ? "ขาย" : "อัพเดท"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Investment Account modal */}
+      {showAccModal && (
+        <div className="fixed inset-0 bg-[var(--modal-overlay)] flex items-center justify-center z-[200] p-4" onClick={() => setShowAccModal(false)}>
+          <div className="bg-[var(--modal-bg)] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[var(--shadow-lg)] border border-[var(--card-border)]" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-[17px] font-semibold mb-5 text-[var(--text-primary)]">จัดการบัญชีเงินลงทุน</h2>
+
+            {/* Current balances */}
+            {accounts.length > 0 && (
+              <div className="mb-5 p-3 bg-[var(--hover-bg)] rounded-lg">
+                <p className="text-[12px] font-medium text-[var(--text-secondary)] mb-2 uppercase">ยอดคงเหลือ</p>
+                {accounts.map((acc) => (
+                  <div key={acc.id} className="flex justify-between text-[13px] py-0.5">
+                    <span className="text-[var(--text-primary)]">{acc.currency}</span>
+                    <span className="font-semibold text-[var(--text-primary)]">{formatCurrency(acc.balance)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <form onSubmit={handleAccAction}>
+              <div className="mb-4">
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">สกุลเงิน</label>
+                <select value={accCurrency} onChange={(e) => setAccCurrency(e.target.value)} className={inputClass}>
+                  {CURRENCIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">ประเภท</label>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setAccAction("deposit")}
+                    className={`flex-1 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${accAction === "deposit" ? "bg-[var(--success)] text-white" : "bg-[var(--hover-bg)] text-[var(--text-primary)]"}`}>
+                    ฝากเงิน
+                  </button>
+                  <button type="button" onClick={() => setAccAction("withdraw")}
+                    className={`flex-1 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${accAction === "withdraw" ? "bg-[var(--danger)] text-white" : "bg-[var(--hover-bg)] text-[var(--text-primary)]"}`}>
+                    ถอนเงิน
+                  </button>
+                </div>
+              </div>
+              <div className="mb-5">
+                <label className="block text-[13px] font-medium mb-1.5 text-[var(--text-primary)]">จำนวนเงิน ({accCurrency})</label>
+                <input type="number" value={accAmount} onChange={(e) => setAccAmount(e.target.value)} required min="0" step="0.01" className={inputClass} />
+                <p className="text-[11px] text-[var(--text-tertiary)] mt-1">
+                  ยอดปัจจุบัน: {formatCurrency(getAccBalance(accCurrency))} {accCurrency}
+                </p>
+              </div>
+              <div className="flex gap-2.5 justify-end">
+                <button type="button" onClick={() => setShowAccModal(false)} className="px-4 py-2 border border-[var(--input-border)] text-[var(--text-primary)] rounded-lg text-[13px] font-medium hover:bg-[var(--hover-bg)] transition-colors">ปิด</button>
+                <button type="submit" className={`px-4 py-2 text-white rounded-lg text-[13px] font-medium transition-colors ${accAction === "deposit" ? "bg-[var(--success)]" : "bg-[var(--danger)]"}`}>
+                  {accAction === "deposit" ? "ฝากเงิน" : "ถอนเงิน"}
+                </button>
               </div>
             </form>
           </div>
